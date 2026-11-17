@@ -492,6 +492,17 @@ body.com-excecao .bn-exc{display:block}
 .bn-fechado h1{margin-top:12px}
 body.fora .bn-aberto{display:none}
 body.fora .bn-fechado{display:block}
+.bn-modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(30,20,10,.55)}
+.bn-modal.on{display:flex}
+.bn-modal .box{max-width:440px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:26px 22px;box-shadow:0 30px 60px -30px rgba(0,0,0,.5);text-align:center}
+.bn-modal h2{font-size:clamp(22px,4vw,27px);margin:8px 0 10px}
+.bn-modal p{color:var(--text)}
+.bn-modal .relogio{font-family:var(--mono);font-size:40px;font-weight:300;color:var(--amber);margin:14px 0 4px;letter-spacing:.04em}
+.bn-modal .btn{width:100%;margin-top:12px}
+.bn-modal .nao{background:none;border:0;margin-top:10px;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);cursor:pointer}
+.bn-perdeu{display:none;border-style:dashed}
+body.exc-perdida .bn-perdeu{display:block}
+body.exc-perdida .bn-exc{display:none}
 </style>
 </head>
 <body>
@@ -525,6 +536,11 @@ body.fora .bn-fechado{display:block}
         <a class="btn btn-green btn-lg" id="bn-cta15" href="https://buy.stripe.com/eVq3cub7n2dMg4PajP77O01?prefilled_promo_code=EXCECAO15">Usar minha exceção de 15%</a>
         <p class="hint">O desconto entra sozinho no pagamento</p>
       </div>
+      <div class="bn-card bn-perdeu" id="bn-perdeu">
+        <span class="lbl">Benefício expirado</span>
+        <p style="margin-top:10px">O tempo para usar o benefício de 15% acabou. Se ainda quiser garantir a aula de domingo com desconto, fale com a Âmbar no WhatsApp.</p>
+        <a class="btn btn-green btn-lg" id="bn-wa" href="https://wa.me/5511927394858" target="_blank" rel="noopener">Falar com a Âmbar no WhatsApp</a>
+      </div>
     </section>
     <section class="bn-fechado">
       <p class="eyebrow" id="bn-eyebrow">Bônus de sábado</p>
@@ -533,6 +549,18 @@ body.fora .bn-fechado{display:block}
     </section>
   </div>
 </main>
+<div class="bn-modal" id="bn-modal" role="dialog" aria-modal="true" aria-labelledby="bn-m-t">
+  <div class="box">
+    <p class="eyebrow">Bônus de sábado</p>
+    <h2 id="bn-m-t">Infelizmente os 30% já esgotaram.</h2>
+    <p>Mas consegui um benefício para você: <b>15% off</b> na aula de domingo, de R$ 89,90 por <b>R$ 76,41</b>.</p>
+    <p style="margin-top:10px"><b>Incluir o cupom no carrinho?</b></p>
+    <div class="relogio" id="bn-relogio">1:00</div>
+    <p class="hint" style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Depois desse tempo o benefício some</p>
+    <a class="btn btn-green btn-lg" id="bn-m-sim" href="https://buy.stripe.com/eVq3cub7n2dMg4PajP77O01?prefilled_promo_code=EXCECAO15">Sim, incluir no carrinho</a>
+    <button type="button" class="nao" id="bn-m-nao">Agora não</button>
+  </div>
+</div>
 <script>
 (function(){
   /* horário de Brasília (UTC-3). Abre 28/11 11h30; fecha 29/11 8h30.
@@ -545,8 +573,50 @@ body.fora .bn-fechado{display:block}
       document.getElementById('bn-texto').textContent='Obrigado por ter participado do webinar.';}
   }
   if(exc || ver || agora>=excecao){document.body.classList.add('com-excecao');}
-  function ic(id,v,n){var a=document.getElementById(id);if(a)a.addEventListener('click',function(){try{fbq('track','InitiateCheckout',{content_name:n,currency:'BRL',value:v});}catch(e){}});}
-  ic('bn-cta30',62.93,'Aula bonus domingo - 30%'); ic('bn-cta15',76.41,'Aula bonus domingo - 15%');
+  function track(v,n){try{fbq('track','InitiateCheckout',{content_name:n,currency:'BRL',value:v});}catch(e){}}
+  function ic(id,v,n){var a=document.getElementById(id);if(a)a.addEventListener('click',function(){track(v,n);});}
+  ic('bn-cta15',76.41,'Aula bonus domingo - 15%'); ic('bn-m-sim',76.41,'Aula bonus domingo - 15% (esgotado 30%)');
+
+  /* 30% esgotado: ao clicar, oferece 15% por 1 minuto. Se não aceitar, o benefício
+     some (fica marcado neste navegador) e a pessoa precisa falar com a Âmbar.
+     Teste: ?ver=ambar&esgotado=1 simula esgotado; ?ver=ambar&reset=1 limpa a marca. */
+  var KP='amb_exc15_perdida', simula=ver&&/[?&]esgotado=1\b/.test(q);
+  function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v);}catch(e){}}
+  if(ver&&/[?&]reset=1\b/.test(q))ls(KP,null);
+  if(ls(KP)==='1')document.body.classList.add('exc-perdida');
+  var wa=document.getElementById('bn-wa');
+  if(wa)wa.href='https://wa.me/5511927394858?text='+encodeURIComponent('Olá! Fiquei até o fim do webinar e perdi o tempo do benefício de 15% da aula de domingo. Ainda consigo?');
+  function restam(cb){
+    if(simula){cb(0);return;}
+    var feito=false, fim=function(n){if(!feito){feito=true;cb(n);}};
+    setTimeout(function(){fim(null);},3000);
+    try{fetch('/cupons.php',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(d){fim(d&&typeof d.restam==='number'?d.restam:null);},function(){fim(null);});}catch(e){fim(null);}
+  }
+  var modal=document.getElementById('bn-modal'), rel=document.getElementById('bn-relogio'), timer=null;
+  function perder(){
+    clearInterval(timer); modal.classList.remove('on'); ls(KP,'1');
+    document.body.classList.add('exc-perdida');
+    var c=document.getElementById('bn-perdeu'); if(c&&c.scrollIntoView)c.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  function oferecer(){
+    if(ls(KP)==='1'){perder();return;}
+    var fimT=Date.now()+60000; modal.classList.add('on');
+    (function tick(){var s=Math.max(0,Math.ceil((fimT-Date.now())/1000));rel.textContent=Math.floor(s/60)+':'+('0'+s%60).slice(-2);if(s<=0)perder();})();
+    timer=setInterval(function(){var s=Math.max(0,Math.ceil((fimT-Date.now())/1000));rel.textContent=Math.floor(s/60)+':'+('0'+s%60).slice(-2);if(s<=0)perder();},250);
+  }
+  document.getElementById('bn-m-nao').addEventListener('click',perder);
+  document.getElementById('bn-m-sim').addEventListener('click',function(){clearInterval(timer);});
+  var c30=document.getElementById('bn-cta30'), indo=false;
+  c30.addEventListener('click',function(ev){
+    ev.preventDefault(); if(indo)return; indo=true;
+    var href=c30.href;
+    restam(function(n){
+      indo=false;
+      if(n===0){oferecer();return;}
+      track(62.93,'Aula bonus domingo - 30%'); location.href=href;
+    });
+  });
 })();
 </script>
 <footer>
