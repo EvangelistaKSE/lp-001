@@ -484,6 +484,11 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
 .btn-green{background:var(--green);color:#fff;border-color:var(--green)}
 .btn-green:hover{background:var(--green-bright);border-color:var(--green-bright)}
 .bn-fechado{display:none;text-align:center;padding:40px 0}
+.bn-card .de{margin-top:10px;font-size:15px;color:var(--muted);text-decoration:line-through}
+.bn-exc{display:none;border-style:dashed}
+body.com-excecao .bn-exc{display:block}
+.bn-exc h2{font-size:clamp(22px,3.2vw,27px);margin:10px 0 8px}
+.bn-exc p{color:var(--text)}
 .bn-fechado h1{margin-top:12px}
 body.fora .bn-aberto{display:none}
 body.fora .bn-fechado{display:block}
@@ -503,14 +508,22 @@ body.fora .bn-fechado{display:block}
   <div class="wrap">
     <section class="bn-aberto">
       <p class="eyebrow">Bônus de sábado · só para quem ficou até o fim</p>
-      <h1>Domingo tem uma aula <em>extra</em>.</h1>
-      <p class="lead">Para quem participou do webinar: mais um encontro ao vivo com o <b>Dr. Rafael Fernandes</b>, no domingo de manhã, sobre <b>leilão de imóveis com carta de consórcio</b>, com espaço para as suas perguntas.</p>
-      <div class="bn-card">
-        <span class="lbl">Aula bônus · Domingo, 29/11</span>
-        <div class="amt"><small>R$</small>89,90</div>
-        <p class="sub">Das 8h45 às 11h30 · ao vivo · online</p>
-        <a class="btn btn-green btn-lg" id="bn-cta" href="https://buy.stripe.com/eVq3cub7n2dMg4PajP77O01">Quero participar no domingo</a>
-        <p class="hint">Disponível só até domingo, 8h30</p>
+      <h1>Resgate seu <em>bônus</em>.</h1>
+      <p class="lead">No domingo tem mais um encontro ao vivo com o <b>Dr. Rafael Fernandes</b>, sobre <b>leilão de imóveis com carta de consórcio</b>, com espaço para as suas perguntas. Quem garantir o ingresso ainda hoje, sábado, já tem o lugar marcado no domingo.</p>
+      <div class="bn-card" id="bn-30">
+        <span class="lbl">Bônus · 30% off para os 10 primeiros</span>
+        <div class="de">De R$ 89,90 por</div>
+        <div class="amt"><small>R$</small>62,93</div>
+        <p class="sub">Aula bônus · Domingo, 29/11 · das 8h45 às 11h30 · ao vivo</p>
+        <a class="btn btn-green btn-lg" id="bn-cta30" href="https://buy.stripe.com/eVq3cub7n2dMg4PajP77O01?prefilled_promo_code=BONUSSABADO30">Resgatar meu bônus de 30%</a>
+        <p class="hint">O desconto entra sozinho no pagamento · válido para os 10 primeiros</p>
+      </div>
+      <div class="bn-card bn-exc" id="bn-15">
+        <span class="lbl">Exceção surpresa</span>
+        <h2>Não deu tempo de pegar os 30%?</h2>
+        <p>Abrimos uma exceção para quem ficou até o fim: <b>15% off</b> na aula de domingo, só até domingo às 8h30.</p>
+        <a class="btn btn-green btn-lg" id="bn-cta15" href="https://buy.stripe.com/eVq3cub7n2dMg4PajP77O01?prefilled_promo_code=EXCECAO15">Usar minha exceção de 15%</a>
+        <p class="hint">O desconto entra sozinho no pagamento</p>
       </div>
     </section>
     <section class="bn-fechado">
@@ -522,16 +535,18 @@ body.fora .bn-fechado{display:block}
 </main>
 <script>
 (function(){
-  /* janela em horário de Brasília (UTC-3): 28/11/2026 11h30 até 29/11/2026 8h30 */
-  var abre=Date.UTC(2026,10,28,14,30), fecha=Date.UTC(2026,10,29,11,30), agora=Date.now();
-  var ver=/[?&]ver=ambar\b/.test(location.search);
+  /* horário de Brasília (UTC-3). Abre 28/11 11h30; fecha 29/11 8h30.
+     A exceção de 15% aparece sozinha às 12h do sábado, ou antes com ?excecao=1 no link. */
+  var abre=Date.UTC(2026,10,28,14,30), excecao=Date.UTC(2026,10,28,15,0), fecha=Date.UTC(2026,10,29,11,30), agora=Date.now();
+  var q=location.search, ver=/[?&]ver=ambar\b/.test(q), exc=/[?&]excecao=1\b/.test(q);
   if(!ver && (agora<abre || agora>=fecha)){
     document.body.classList.add('fora');
-    if(agora>=fecha){document.getElementById('bn-titulo').textContent='As inscrições para a aula bônus foram encerradas.';
+    if(agora>=fecha){document.getElementById('bn-titulo').textContent='O resgate do bônus foi encerrado.';
       document.getElementById('bn-texto').textContent='Obrigado por ter participado do webinar.';}
   }
-  var cta=document.getElementById('bn-cta');
-  if(cta)cta.addEventListener('click',function(){try{fbq('track','InitiateCheckout',{content_name:'Aula bonus domingo',currency:'BRL',value:89.90});}catch(e){}});
+  if(exc || ver || agora>=excecao){document.body.classList.add('com-excecao');}
+  function ic(id,v,n){var a=document.getElementById(id);if(a)a.addEventListener('click',function(){try{fbq('track','InitiateCheckout',{content_name:n,currency:'BRL',value:v});}catch(e){}});}
+  ic('bn-cta30',62.93,'Aula bonus domingo - 30%'); ic('bn-cta15',76.41,'Aula bonus domingo - 15%');
 })();
 </script>
 <footer>

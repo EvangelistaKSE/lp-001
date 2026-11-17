@@ -1168,7 +1168,9 @@ fill="#0F0A07" stroke="none">
 .amb-chat-btn{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;background:var(--green);color:#fff;
   box-shadow:0 12px 28px -10px rgba(35,135,74,.7);display:flex;align-items:center;justify-content:center;transition:transform .18s ease}
 .amb-chat-btn:hover{transform:scale(1.05)}
-.amb-chat-btn .amb-dot{position:absolute;top:6px;right:6px;width:12px;height:12px;border-radius:50%;background:var(--amber-bright);border:2px solid #fff}
+.amb-chat-btn .amb-dot{position:absolute;top:-2px;right:-2px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#E0332B;color:#fff;border:2px solid #fff;font:700 12px/18px var(--display);text-align:center}
+.amb-chat-btn.pulsa{animation:ambPulsa 1.8s ease-out infinite}
+@keyframes ambPulsa{0%{box-shadow:0 0 0 0 rgba(35,135,74,.55),0 12px 28px -10px rgba(35,135,74,.7)}70%{box-shadow:0 0 0 16px rgba(35,135,74,0),0 12px 28px -10px rgba(35,135,74,.7)}100%{box-shadow:0 0 0 0 rgba(35,135,74,0),0 12px 28px -10px rgba(35,135,74,.7)}}
 .amb-chat-tip{position:fixed;right:88px;bottom:30px;z-index:60;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;
   box-shadow:0 12px 28px -14px rgba(42,28,14,.5);max-width:240px;cursor:pointer}
 .amb-chat{position:fixed;right:18px;bottom:90px;z-index:61;width:min(360px,calc(100vw - 36px));max-height:min(560px,calc(100vh - 120px));display:none;flex-direction:column;
@@ -1191,13 +1193,16 @@ fill="#0F0A07" stroke="none">
 .amb-form textarea{min-height:64px;resize:vertical}
 .amb-form .amb-err{color:#A33;font-size:13px;display:none}
 .amb-form button{background:var(--green);color:#fff;border:0;border-radius:9px;padding:12px;font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
-@media(max-width:520px){.amb-chat-tip{display:none}}
+.amb-chat-tip .tip-x{position:absolute;top:2px;right:6px;border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer}
+.amb-chat-tip{padding-right:24px}
+.amb-chat-tip b{display:block;font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--amber);margin-bottom:2px}
+@media(max-width:520px){.amb-chat-tip{right:86px;bottom:22px;max-width:200px;font-size:13px}}
 </style>
-<button class="amb-chat-btn" id="amb-chat-btn" aria-label="Abrir o chat da Âmbar" aria-expanded="false">
+<button class="amb-chat-btn pulsa" id="amb-chat-btn" aria-label="Abrir o chat da Âmbar" aria-expanded="false">
   <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.8 6.4 6.4 0 0 0 1.3 3.4 14.7 14.7 0 0 0 5.6 5c2.1.9 2.9.9 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.4-.3-.8-.4z"/></svg>
-  <span class="amb-dot" aria-hidden="true"></span>
+  <span class="amb-dot" aria-hidden="true">1</span>
 </button>
-<div class="amb-chat-tip" id="amb-chat-tip" hidden>Ficou com alguma dúvida sobre o webinar? Fale com a gente 👋</div>
+<div class="amb-chat-tip" id="amb-chat-tip" hidden><b>Âmbar · agora</b>Olá! Ficou com alguma dúvida sobre o webinar? Estou aqui para ajudar 👋<button type="button" class="tip-x" id="amb-tip-x" aria-label="Fechar aviso">×</button></div>
 <div class="amb-chat" id="amb-chat" role="dialog" aria-label="Chat da Âmbar Alternative">
   <div class="amb-chat-h"><div class="av">Â</div><div><b>Âmbar Alternative</b><small>Assistente virtual</small></div><button type="button" id="amb-chat-x" aria-label="Fechar">×</button></div>
   <div class="amb-chat-b" id="amb-chat-b" aria-live="polite"></div>
@@ -1247,11 +1252,14 @@ fill="#0F0A07" stroke="none">
     };
     body.appendChild(f);body.scrollTop=body.scrollHeight;setTimeout(function(){f.nome.focus();},50);
   }
-  function abrir(){box.classList.add('open');btn.setAttribute('aria-expanded','true');tip.hidden=true;var dot=btn.querySelector('.amb-dot');if(dot)dot.remove();iniciar();}
+  function lido(){try{sessionStorage.setItem('amb_chat_lido','1');}catch(e){}btn.classList.remove('pulsa');var dot=btn.querySelector('.amb-dot');if(dot)dot.remove();}
+  function abrir(){box.classList.add('open');btn.setAttribute('aria-expanded','true');tip.hidden=true;lido();iniciar();}
   function fechar(){box.classList.remove('open');btn.setAttribute('aria-expanded','false');}
   btn.onclick=function(){box.classList.contains('open')?fechar():abrir();};
-  tip.onclick=abrir;document.getElementById('amb-chat-x').onclick=fechar;
-  setTimeout(function(){if(!iniciado)tip.hidden=false;},12000);
+  tip.onclick=function(e){if(e.target&&e.target.id==='amb-tip-x'){e.stopPropagation();tip.hidden=true;return;}abrir();};document.getElementById('amb-chat-x').onclick=fechar;
+  /* mensagem não lida: aparece logo e fica sinalizando até a pessoa clicar */
+  var jaLido=false;try{jaLido=sessionStorage.getItem('amb_chat_lido')==='1';}catch(e){}
+  if(jaLido){lido();}else{setTimeout(function(){if(!iniciado)tip.hidden=false;},2500);}
 })();
 </script>
 </body>
