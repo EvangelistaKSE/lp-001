@@ -365,6 +365,7 @@ section{padding-block:clamp(52px,8vw,88px);border-top:1px solid var(--line-soft)
 /* oferta + form */
 .offer-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:20px;align-items:start;margin-top:46px}
 @media(max-width:880px){.offer-grid{grid-template-columns:1fr}}
+.offer-grid>*{min-width:0}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:30px 28px;box-shadow:0 18px 40px -30px rgba(90,58,28,.35)}
 .card-price{display:grid;gap:16px;align-content:start}
 .card-price .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);font-weight:600}
@@ -447,6 +448,24 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
   .rise.reveal{opacity:0;transform:translateY(18px)}
   .rise.reveal.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s ease}
 }
+
+/* dois ingressos */
+.card-plans{gap:14px}
+.plan{position:relative;display:grid;gap:12px;border:1.5px solid var(--line);border-radius:12px;padding:18px 18px 16px;background:var(--surface-2);cursor:pointer;transition:border-color .18s ease,box-shadow .18s ease,background .18s ease}
+.plan:hover{border-color:var(--amber-bright)}
+.plan input{position:absolute;opacity:0;pointer-events:none}
+.plan-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-left:30px;position:relative}
+.plan-h::before{content:"";position:absolute;left:0;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface)}
+.plan-n{font-size:19px;font-weight:500;color:var(--ink)}
+.plan-p{font-size:34px;font-weight:300;letter-spacing:-.04em;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+.plan-p small{font-size:15px;color:var(--muted);margin-right:3px;vertical-align:top}
+.plan .incl{padding-top:12px}
+.plan .incl li{font-size:15px}
+.plan-tag{justify-self:start;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;background:var(--amber);color:#FFF8EC;border-radius:999px;padding:4px 10px}
+.plan:has(input:checked){border-color:var(--green);background:var(--surface);box-shadow:0 0 0 3px rgba(35,135,74,.14)}
+.plan:has(input:checked) .plan-h::before{border-color:var(--green);background:radial-gradient(circle,var(--green) 0 45%,var(--surface) 48%)}
+.plan:has(input:focus-visible){outline:2px solid var(--green);outline-offset:2px}
+@media(max-width:420px){.plan-p{font-size:28px}.plan-n{font-size:17px}}
 </style>
 
 </head>
@@ -615,18 +634,31 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
     <div class="wrap">
       <div class="sec-head rise">
         <p class="eyebrow">Garanta sua vaga</p>
-        <h2>Dois dias de imersão por <em>R$ 47,90</em>.</h2>
+        <h2>Dois dias de imersão a partir de <em>R$ 47,90</em>.</h2>
         <p class="lede">Preencha os dados e siga para o pagamento em ambiente virtual seguro. Você recebe o link de acesso à aula com antecedência, no e-mail e no WhatsApp cadastrados.</p>
       </div>
       <div class="offer-grid">
-        <div class="card card-price rise">
-          <div><span class="lbl">1º lote · Inscrição única</span><div class="amt"><small>R$</small>47,90</div></div>
+        <div class="card card-price card-plans rise" role="radiogroup" aria-label="Escolha seu ingresso">
+          <span class="lbl">1º lote · Escolha seu ingresso</span>
+          <label class="plan">
+            <input type="radio" name="plano" value="ingresso" checked>
+            <span class="plan-h"><span class="plan-n">Ingresso</span><span class="plan-p"><small>R$</small>47,90</span></span>
+            <ul class="incl">
+              <li>Acesso ao vivo nos dois dias</li>
+              <li>Sessão de perguntas com o Rafael</li>
+              <li>Acesso à tecnologia proprietária de estrutura de alavancagem, desenvolvida pelo Rafael</li>
+            </ul>
+          </label>
+          <label class="plan">
+            <input type="radio" name="plano" value="comunidade">
+            <span class="plan-tag">Mais completo</span>
+            <span class="plan-h"><span class="plan-n">Ingresso + Comunidade</span><span class="plan-p"><small>R$</small>57,90</span></span>
+            <ul class="incl">
+              <li>Tudo do ingresso</li>
+              <li>Comunidade da imersão no WhatsApp: avisos, materiais e conversa com os outros participantes</li>
+            </ul>
+          </label>
           <p class="sub">27 e 28 de novembro · ao vivo</p>
-          <ul class="incl">
-            <li>Acesso ao vivo nos dois dias</li>
-            <li>Sessão de perguntas com o Rafael</li>
-            <li>Acesso à tecnologia proprietária de estrutura de alavancagem, desenvolvida pelo Rafael</li>
-          </ul>
         </div>
 
         <div class="card card-form rise">
@@ -675,7 +707,7 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
               <input type="hidden" name="experiencia" id="f-exp" required>
               <span class="msg">Selecione uma opção.</span>
             </div>
-            <button class="btn btn-green btn-lg btn-block" type="submit">Finalizar inscrição · <span class="px">R$47,90</span></button>
+            <button class="btn btn-green btn-lg btn-block" type="submit">Finalizar inscrição · <span class="px" id="px-final">R$47,90</span></button>
             <p class="form-note">Ambiente seguro · Link de acesso por e-mail e WhatsApp</p>
           </form>
           <div class="form-done" id="form-done" aria-live="polite">
@@ -1022,6 +1054,15 @@ fill="#0F0A07" stroke="none">
 (function(){
   /* ===== TROCAR AQUI: URL do checkout (Hotmart / Eduzz / Stripe...) ===== */
   var CHECKOUT_URL = "https://buy.stripe.com/14A8wO3EVg4C5qb8bH77O00";
+  /* Dois ingressos: cada um com o seu link da Stripe */
+  var PLANOS = {
+    ingresso:   {url: "https://buy.stripe.com/14A8wO3EVg4C5qb8bH77O00", valor: 47.90, txt: "R$47,90", nome: "Imersao Ambar - Ingresso"},
+    comunidade: {url: "https://buy.stripe.com/bJe14m4IZf0y8CngId77O02", valor: 57.90, txt: "R$57,90", nome: "Imersao Ambar - Ingresso + Comunidade"}
+  };
+  function planoAtual(){var r=document.querySelector('input[name="plano"]:checked');return PLANOS[r?r.value:'ingresso'];}
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="plano"]'),function(r){
+    r.addEventListener('change',function(){var p=planoAtual();var px=document.getElementById('px-final');if(px)px.textContent=p.txt;});
+  });
 
   /* Dropdown customizado */
   var dd=document.getElementById('dd-exp'),trigger=dd.querySelector('.dd-trigger'),
@@ -1070,7 +1111,8 @@ fill="#0F0A07" stroke="none">
     if(!ok){var first=form.querySelector('.field.err');if(first)first.scrollIntoView({behavior:'smooth',block:'center'});return;}
 
     ambarTrack('Lead',{content_name:'Imersao Ambar'});
-    ambarTrack('InitiateCheckout',{content_name:'Imersao Ambar',currency:'BRL',value:47.90});
+    var plano=planoAtual(); CHECKOUT_URL=plano.url;
+    ambarTrack('InitiateCheckout',{content_name:plano.nome,currency:'BRL',value:plano.valor});
 
     form.style.display='none';
     var done=document.getElementById('form-done');done.classList.add('show');
