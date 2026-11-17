@@ -1112,6 +1112,8 @@ fill="#0F0A07" stroke="none">
 
     ambarTrack('Lead',{content_name:'Imersao Ambar'});
     var plano=planoAtual(); CHECKOUT_URL=plano.url;
+    try{var expv=fexp.value||'';window.ambarLeadZoho&&window.ambarLeadZoho({nome:(nome.value.trim()+' '+sobre.value.trim()).trim(),tel:tel.value.replace(/\D/g,''),email:email.value.trim(),
+      desc:'Origem: LP do webinar 27-28/11 · iniciou a compra · '+plano.nome.replace('Imersao Ambar - ','Ingresso escolhido: ')+' (R$ '+plano.valor.toFixed(2).replace('.',',')+') · Experiência com alavancagem: '+expv});}catch(e){}
     ambarTrack('InitiateCheckout',{content_name:plano.nome,currency:'BRL',value:plano.valor});
 
     form.style.display='none';
@@ -1160,5 +1162,97 @@ fill="#0F0A07" stroke="none">
 })();
 </script>
 
+
+<!-- ===== Chat da Âmbar: assistente virtual + passagem para o WhatsApp + lead no Zoho CRM ===== -->
+<style>
+.amb-chat-btn{position:fixed;right:18px;bottom:18px;z-index:60;width:60px;height:60px;border-radius:50%;border:0;cursor:pointer;background:var(--green);color:#fff;
+  box-shadow:0 12px 28px -10px rgba(35,135,74,.7);display:flex;align-items:center;justify-content:center;transition:transform .18s ease}
+.amb-chat-btn:hover{transform:scale(1.05)}
+.amb-chat-btn .amb-dot{position:absolute;top:6px;right:6px;width:12px;height:12px;border-radius:50%;background:var(--amber-bright);border:2px solid #fff}
+.amb-chat-tip{position:fixed;right:88px;bottom:30px;z-index:60;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;
+  box-shadow:0 12px 28px -14px rgba(42,28,14,.5);max-width:240px;cursor:pointer}
+.amb-chat{position:fixed;right:18px;bottom:90px;z-index:61;width:min(360px,calc(100vw - 36px));max-height:min(560px,calc(100vh - 120px));display:none;flex-direction:column;
+  background:var(--surface);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 24px 60px -24px rgba(42,28,14,.55);font-family:var(--display)}
+.amb-chat.open{display:flex}
+.amb-chat-h{background:var(--brown);color:#F4E7CF;padding:14px 16px;display:flex;align-items:center;gap:10px}
+.amb-chat-h .av{width:34px;height:34px;border-radius:50%;background:var(--amber-bright);color:#2A1404;display:flex;align-items:center;justify-content:center;font-family:var(--logo);font-weight:600}
+.amb-chat-h b{display:block;font-size:15px;font-weight:500}
+.amb-chat-h small{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#E8C99A}
+.amb-chat-h button{margin-left:auto;background:none;border:0;color:#F4E7CF;font-size:22px;cursor:pointer;line-height:1}
+.amb-chat-b{padding:14px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;flex:1}
+.amb-msg{max-width:88%;padding:10px 13px;border-radius:14px;font-size:15px;line-height:1.45}
+.amb-msg.bot{background:var(--surface-2);border:1px solid var(--line-soft);color:var(--text);border-bottom-left-radius:4px}
+.amb-msg.eu{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:4px}
+.amb-opts{display:flex;flex-direction:column;gap:8px}
+.amb-opts button{text-align:left;background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:10px 12px;font:500 14px var(--display);cursor:pointer}
+.amb-opts button:hover{border-color:var(--green)}
+.amb-form{display:grid;gap:8px}
+.amb-form input,.amb-form textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font:15px var(--display);background:#fff;color:var(--ink)}
+.amb-form textarea{min-height:64px;resize:vertical}
+.amb-form .amb-err{color:#A33;font-size:13px;display:none}
+.amb-form button{background:var(--green);color:#fff;border:0;border-radius:9px;padding:12px;font:600 13px var(--mono);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+@media(max-width:520px){.amb-chat-tip{display:none}}
+</style>
+<button class="amb-chat-btn" id="amb-chat-btn" aria-label="Abrir o chat da Âmbar" aria-expanded="false">
+  <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3zm0 23.6a10.6 10.6 0 0 1-5.4-1.5l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7.1a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5.9-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.8 6.4 6.4 0 0 0 1.3 3.4 14.7 14.7 0 0 0 5.6 5c2.1.9 2.9.9 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.4-.3-.8-.4z"/></svg>
+  <span class="amb-dot" aria-hidden="true"></span>
+</button>
+<div class="amb-chat-tip" id="amb-chat-tip" hidden>Ficou com alguma dúvida sobre o webinar? Fale com a gente 👋</div>
+<div class="amb-chat" id="amb-chat" role="dialog" aria-label="Chat da Âmbar Alternative">
+  <div class="amb-chat-h"><div class="av">Â</div><div><b>Âmbar Alternative</b><small>Assistente virtual</small></div><button type="button" id="amb-chat-x" aria-label="Fechar">×</button></div>
+  <div class="amb-chat-b" id="amb-chat-b" aria-live="polite"></div>
+</div>
+<script>
+(function(){
+  var WA="5511927394858";
+  var ZOHO={url:"https://crm.zoho.com/crm/WebToLeadForm",xnQsjsdp:"2f024b74c1c8be86a3950e223c7bd9fb4dc84e6cb97618bb2e527315748d931f",xmIwtLD:"b02e4221101b5addfa9ea8f004d8de35a379272742a77b351b17a0d94ef262baeb50a31f39f2dff4010a5b116b6632f1",actionType:"TGVhZHM=",returnURL:"https://ambaralternativewebinar.com.br"};
+  /* grava o lead no Zoho CRM (formulário "LP Webinar 27 28 inscricao e chat") */
+  window.ambarLeadZoho=function(d){
+    try{
+      var p=new URLSearchParams();
+      p.append('xnQsjsdp',ZOHO.xnQsjsdp);p.append('zc_gad','');p.append('xmIwtLD',ZOHO.xmIwtLD);p.append('actionType',ZOHO.actionType);p.append('returnURL',ZOHO.returnURL);
+      p.append('Last Name',(d.nome||'Sem nome').slice(0,80));p.append('Mobile',d.tel||'');p.append('Email',d.email||'');
+      p.append('Lead Status','Aguardando Contato');p.append('Description',(d.desc||'').slice(0,2000));p.append('aG9uZXlwb3Q','');
+      var ok=false;
+      if(navigator.sendBeacon){ok=navigator.sendBeacon(ZOHO.url,p);}
+      if(!ok){fetch(ZOHO.url,{method:'POST',mode:'no-cors',keepalive:true,body:p});}
+    }catch(e){}
+  };
+  var btn=document.getElementById('amb-chat-btn'),box=document.getElementById('amb-chat'),body=document.getElementById('amb-chat-b'),tip=document.getElementById('amb-chat-tip'),iniciado=false;
+  function msg(t,quem){var d=document.createElement('div');d.className='amb-msg '+(quem||'bot');d.textContent=t;body.appendChild(d);body.scrollTop=body.scrollHeight;return d;}
+  function opts(lista){var w=document.createElement('div');w.className='amb-opts';lista.forEach(function(o){var b=document.createElement('button');b.type='button';b.textContent=o[0];b.onclick=function(){w.remove();msg(o[0],'eu');o[1]();};w.appendChild(b);});body.appendChild(w);body.scrollTop=body.scrollHeight;}
+  function menu(){opts([['Quero falar com um atendente',atendente],['Quais são os horários e valores?',horarios],['Como faço a inscrição?',inscricao]]);}
+  function iniciar(){
+    if(iniciado)return;iniciado=true;
+    msg('Olá! Eu sou a assistente virtual da Âmbar Alternative 👋');
+    setTimeout(function(){msg('Posso te passar as informações do webinar de alavancagem ou te encaminhar para alguém da nossa equipe pelo WhatsApp, para tirar suas dúvidas. Como prefere?');menu();},500);
+  }
+  function horarios(){msg('O webinar é 100% online e ao vivo, com o Dr. Rafael Fernandes:\n• Sexta, 27/11, das 20h às 22h30\n• Sábado, 28/11, das 8h45 às 12h\nIngresso: R$ 47,90. Ingresso + Comunidade no WhatsApp: R$ 57,90.').style.whiteSpace='pre-line';setTimeout(function(){msg('Posso ajudar em mais alguma coisa?');menu();},400);}
+  function inscricao(){msg('É só escolher o ingresso na seção "Garanta sua vaga", preencher seus dados e pagar por Pix ou cartão. Vou te levar até lá.');setTimeout(function(){var o=document.getElementById('oferta');if(o)o.scrollIntoView({behavior:'smooth'});},600);setTimeout(function(){msg('Se preferir, também te passo para um atendente.');opts([['Quero falar com um atendente',atendente]]);},900);}
+  function atendente(){
+    msg('Perfeito! Para o atendente já saber com quem está falando, me diga seu nome e seu WhatsApp:');
+    var f=document.createElement('form');f.className='amb-form';f.noValidate=true;
+    f.innerHTML='<input name="nome" placeholder="Seu nome" autocomplete="name" required><input name="tel" type="tel" inputmode="tel" placeholder="Seu WhatsApp com DDD" autocomplete="tel" required><textarea name="duvida" placeholder="Sua dúvida (opcional)"></textarea><span class="amb-err">Informe seu nome e um WhatsApp com DDD.</span><button type="submit">Falar no WhatsApp</button>';
+    f.onsubmit=function(e){e.preventDefault();
+      var nome=f.nome.value.trim(),tel=f.tel.value.replace(/\D/g,''),duv=f.duvida.value.trim();
+      if(nome.length<2||tel.length<10){f.querySelector('.amb-err').style.display='block';return;}
+      window.ambarLeadZoho({nome:nome,tel:tel,desc:'Origem: chat da LP do webinar 27-28/11 · pediu atendimento humano'+(duv?' · Dúvida: '+duv:'')});
+      try{if(window.ambarTrack)ambarTrack('Contact',{content_name:'Chat LP Webinar'});}catch(err){}
+      f.remove();msg(nome+' · '+f.tel.value,'eu');
+      msg('Obrigada, '+nome.split(' ')[0]+'! Estou abrindo o WhatsApp da Âmbar. É só enviar a mensagem que um atendente responde por lá.');
+      var txt='Olá! Sou '+nome+', vim pela página do webinar de alavancagem e quero falar com um atendente.'+(duv?' Minha dúvida: '+duv:'');
+      var url='https://wa.me/'+WA+'?text='+encodeURIComponent(txt);
+      setTimeout(function(){window.open(url,'_blank','noopener');},700);
+      setTimeout(function(){var a=document.createElement('div');a.className='amb-opts';a.innerHTML='<button type="button">Abrir o WhatsApp de novo</button>';a.firstChild.onclick=function(){window.open(url,'_blank','noopener');};body.appendChild(a);body.scrollTop=body.scrollHeight;},1200);
+    };
+    body.appendChild(f);body.scrollTop=body.scrollHeight;setTimeout(function(){f.nome.focus();},50);
+  }
+  function abrir(){box.classList.add('open');btn.setAttribute('aria-expanded','true');tip.hidden=true;var dot=btn.querySelector('.amb-dot');if(dot)dot.remove();iniciar();}
+  function fechar(){box.classList.remove('open');btn.setAttribute('aria-expanded','false');}
+  btn.onclick=function(){box.classList.contains('open')?fechar():abrir();};
+  tip.onclick=abrir;document.getElementById('amb-chat-x').onclick=fechar;
+  setTimeout(function(){if(!iniciado)tip.hidden=false;},12000);
+})();
+</script>
 </body>
 </html>
