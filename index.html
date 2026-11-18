@@ -161,18 +161,6 @@
      OBS: no preview do Claude o script da Meta é bloqueado por
      segurança (CSP) e NÃO dispara. Funciona no seu domínio.
      ============================================================ -->
-<script>
-window.PIXEL_IDS = ["1494900885823336","1648412173302853"]; /* ex.: ["123456789012345"] */
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-try{if(Array.isArray(window.PIXEL_IDS)&&window.PIXEL_IDS.length){
-  window.PIXEL_IDS.forEach(function(id){fbq('init',String(id));});fbq('track','PageView');
-}}catch(e){}
-function ambarTrack(ev,data){try{if(window.fbq&&window.PIXEL_IDS&&window.PIXEL_IDS.length){fbq('track',ev,data||{});}}catch(e){}}
-</script>
 
 <style>
 /* Layout: manual Âmbar v3 + modelo Vanguarda — Marfim, grade técnica, Geist (títulos/corpo), Geist Mono (rótulos), destaque em Âmbar */
@@ -471,6 +459,28 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
 @media(max-width:420px){.plan-p{font-size:28px}.plan-n{font-size:17px}}
 </style>
 
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1648412173302853');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1648412173302853&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<script>
+/* Complementos do Pixel: o código oficial acima já carrega o Pixel e envia o PageView. */
+window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (formulário, medição por seção) */
+function ambarTrack(ev,data){try{if(window.fbq&&window.PIXEL_IDS&&window.PIXEL_IDS.length){fbq('track',ev,data||{});}}catch(e){}}
+</script>
 </head>
 <body>
 <div class="bg-grid" aria-hidden="true"></div>
@@ -1266,5 +1276,107 @@ fill="#0F0A07" stroke="none">
   if(jaLido){lido();}else{setTimeout(function(){if(!iniciado)tip.hidden=false;},2500);}
 })();
 </script>
+<!-- Medição por região: tempo de leitura de cada seção + rolagem (Meta Pixel) e Microsoft Clarity opcional.
+     Teste: abra a página com ?debug=1 e veja os eventos no console. -->
+<script>
+(function(){
+  /* Microsoft Clarity: cole aqui o ID do projeto (clarity.microsoft.com) para ter mapa de calor e tempo de atenção por região */
+  var CLARITY_ID = "";
+  if (CLARITY_ID) {
+    (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script",CLARITY_ID);
+  }
+
+  /* [nome do evento, seletor da seção] */
+  var SECOES = [
+    ['hero','section.hero'],
+    ['conteudo','#conteudo'],
+    ['programacao','#agenda'],
+    ['para_quem','#paraquem'],
+    ['rafael','#facilitador'],
+    ['atuacao','#atuacao'],
+    ['cases','#cases'],
+    ['precos','#oferta'],
+    ['rodape','footer']
+  ];
+  var ENGAJADA = 15;  /* segundos acumulados para considerar a seção "engajada" */
+  var DEBUG = /[?&]debug=1/.test(location.search);
+
+  function envia(ev, dados){
+    try{ if(window.fbq && window.PIXEL_IDS && window.PIXEL_IDS.length) fbq('trackCustom', ev, dados); }catch(e){}
+    try{ if(window.clarity) clarity('event', ev + (dados.secao ? '_' + dados.secao : '_' + dados.percentual)); }catch(e){}
+    if(DEBUG) console.log('[medicao]', ev, JSON.stringify(dados));
+  }
+
+  var els = [], total = {}, engajou = {};
+  SECOES.forEach(function(s){
+    var el = document.querySelector(s[1]);
+    if(el){ el.setAttribute('data-secao', s[0]); els.push(el); total[s[0]] = 0; }
+  });
+  var atual = null, desde = 0;
+  function agora(){ return Date.now(); }
+
+  /* fecha o trecho de leitura da seção atual e envia o tempo */
+  function fecha(){
+    if(!atual || !desde) return;
+    var seg = (agora() - desde) / 1000; desde = 0;
+    if(seg < 1) return;
+    total[atual] += seg;
+    envia('TempoNaSecao', {secao: atual, segundos: Math.round(seg), total_segundos: Math.round(total[atual])});
+    if(!engajou[atual] && total[atual] >= ENGAJADA){
+      engajou[atual] = 1;
+      envia('SecaoEngajada', {secao: atual, segundos: Math.round(total[atual])});
+    }
+  }
+  function abre(nome){
+    if(nome === atual && desde) return;
+    fecha();
+    atual = nome;
+    desde = document.hidden ? 0 : agora();
+    if(DEBUG) console.log('[medicao] lendo:', nome);
+  }
+
+  /* a seção "em leitura" é a que está cruzando a linha do meio da tela */
+  function secaoNoMeio(){
+    var y = window.innerHeight / 2;
+    for(var i = 0; i < els.length; i++){
+      var r = els[i].getBoundingClientRect();
+      if(r.top <= y && r.bottom >= y) return els[i].getAttribute('data-secao');
+    }
+    return null;
+  }
+
+  /* rolagem: 25 / 50 / 75 / 90 % da página */
+  var marcos = [25, 50, 75, 90], feitos = {};
+  function rolagem(){
+    var h = document.documentElement;
+    var p = (window.scrollY + window.innerHeight) / h.scrollHeight * 100;
+    marcos.forEach(function(m){ if(p >= m && !feitos[m]){ feitos[m] = 1; envia('Rolagem', {percentual: m}); } });
+  }
+
+  var pend = false;
+  function checa(){ pend = false; var n = secaoNoMeio(); if(n) abre(n); rolagem(); }
+  function agenda(){ if(!pend){ pend = true; setTimeout(checa, 150); } }
+  window.addEventListener('scroll', agenda, {passive: true});
+  window.addEventListener('resize', agenda);
+  checa();
+  setInterval(checa, 1000);  /* reforço: confere a seção em leitura a cada 1s, mesmo sem evento de scroll */
+
+  /* marca "engajada" mesmo se a pessoa ficar parada lendo a seção */
+  setInterval(function(){
+    if(atual && desde && !engajou[atual] && total[atual] + (agora() - desde) / 1000 >= ENGAJADA){ fecha(); desde = agora(); }
+  }, 5000);
+
+  /* pausa quando a aba fica em segundo plano; envia o que falta ao sair */
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) fecha(); else if(atual) desde = agora();
+  });
+  window.addEventListener('pagehide', fecha);
+
+  window.ambarMedicao = {total: total, atual: function(){ return atual; }};
+})();
+</script>
+
 </body>
 </html>
