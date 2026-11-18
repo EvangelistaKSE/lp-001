@@ -162,21 +162,6 @@
      OBS: no preview do Claude o script da Meta é bloqueado por
      segurança (CSP) e NÃO dispara. Funciona no seu domínio.
      ============================================================ -->
-<script>
-window.PIXEL_IDS = ["1648412173302853"];
-!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
-(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
-try{if(Array.isArray(window.PIXEL_IDS)&&window.PIXEL_IDS.length){
-  window.PIXEL_IDS.forEach(function(id){fbq('init',String(id));});
-  fbq('track','PageView');
-  /* conta a compra uma vez por navegador (recarregar a página não duplica) */
-  var k='ambar_purchase_ingresso';var ja=false;try{ja=localStorage.getItem(k)==='1';}catch(e){}
-  if(!ja){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:47.90});try{localStorage.setItem(k,'1');}catch(e){}}
-}}catch(e){}
-</script>
 
 <style>
 /* Layout: manual Âmbar v3 + modelo Vanguarda — Marfim, grade técnica, Geist (títulos/corpo), Geist Mono (rótulos), destaque em Âmbar */
@@ -506,9 +491,34 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
   .ty .fact:first-child{border-top:0}
 }
 </style>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1648412173302853');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1648412173302853&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<script>
+/* Complementos do Pixel: o código oficial acima já carrega o Pixel e envia o PageView. */
+window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (formulário, medição por seção) */
+try{
+  /* conta a compra uma vez por navegador (recarregar a página não duplica) */
+  var k='ambar_purchase_ingresso';var ja=false;try{ja=localStorage.getItem(k)==='1';}catch(e){}
+  if(!ja){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:47.90});try{localStorage.setItem(k,'1');}catch(e){}}
+}catch(e){}
+</script>
 </head>
 <body>
-<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1648412173302853&ev=PageView&noscript=1"/></noscript>
 <div class="bg-grid" aria-hidden="true"></div>
 <header class="top">
   <div class="wrap">
