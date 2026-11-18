@@ -515,6 +515,21 @@ src="https://www.facebook.com/tr?id=1648412173302853&ev=PageView&noscript=1"
 <script>
 /* Complementos do Pixel: o código oficial acima já carrega o Pixel e envia o PageView. */
 window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (formulário, medição por seção) */
+/* API de Conversões: o mesmo id vai no eventID do Pixel e no event_id do servidor (a Meta conta uma vez só) */
+window.ambarNovoRef=function(){var r='';try{r=crypto.randomUUID().replace(/-/g,'');}catch(e){}
+  if(!r)r=Date.now().toString(36)+Math.random().toString(36).slice(2,12);
+  try{localStorage.setItem('ambar_capi_ref',r);}catch(e){}return r;};
+window.ambarCapi=function(acao,dados){try{var b={acao:acao,url:location.href.split('#')[0]};for(var k in dados){if(Object.prototype.hasOwnProperty.call(dados,k))b[k]=dados[k];}
+  fetch('/capi.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true,credentials:'same-origin'}).catch(function(){});}catch(e){}};
+/* Botões de pagamento da Stripe: a cada clique gera um ref, guarda o contexto do visitante no servidor
+   e coloca o ref no link como client_reference_id (o webhook da Stripe envia a compra com esse id).
+   Roda na fase de captura, antes dos outros cliques (o do bônus de 30% lê o href na hora do clique). */
+document.addEventListener('click',function(ev){try{
+  var a=ev.target&&ev.target.closest?ev.target.closest('a[href*="buy.stripe.com"]'):null;if(!a)return;
+  var ref=ambarNovoRef();ambarCapi('checkout',{ref:ref});
+  var h=a.href.split('#')[0].replace(/([?&])client_reference_id=[^&]*(&|$)/,function(m,p1,p2){return p2?p1:'';});
+  a.href=h+(h.indexOf('?')<0?'?':'&')+'client_reference_id='+encodeURIComponent(ref);
+}catch(e){}},true);
 </script>
 </head>
 <body>

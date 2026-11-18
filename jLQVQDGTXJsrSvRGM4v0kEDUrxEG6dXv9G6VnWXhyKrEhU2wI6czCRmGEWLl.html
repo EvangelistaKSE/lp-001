@@ -514,7 +514,7 @@ window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (for
 try{
   /* conta a compra uma vez por navegador (recarregar a página não duplica) */
   var k='ambar_purchase_ingresso';var ja=false;try{ja=localStorage.getItem(k)==='1';}catch(e){}
-  if(!ja){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:47.90});try{localStorage.setItem(k,'1');}catch(e){}}
+  if(!ja){var ref=null;try{ref=localStorage.getItem('ambar_capi_ref');}catch(e){}fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:47.90},ref?{eventID:ref}:{});try{localStorage.setItem(k,'1');}catch(e){}}
 }catch(e){}
 </script>
 </head>
