@@ -710,6 +710,11 @@ window.ambarCapi=function(acao,dados){try{var b={acao:acao,url:location.href.spl
               <span class="msg">Informe seu nome.</span>
             </div>
             <div class="field">
+              <label for="f-email">E-mail <span class="req">*</span></label>
+              <input class="input" id="f-email" name="email" type="email" autocomplete="email" inputmode="email" placeholder="voce@email.com" required>
+              <span class="msg">Informe um e-mail válido.</span>
+            </div>
+            <div class="field">
               <label for="f-tel">Telefone / WhatsApp <span class="req">*</span></label>
               <input class="input" id="f-tel" name="telefone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(00) 00000-0000" required>
               <span class="msg">Informe um telefone válido.</span>
@@ -1110,24 +1115,28 @@ fill="#0F0A07" stroke="none">
   var form=document.getElementById('lead-form');
   form.addEventListener('submit',function(e){
     e.preventDefault();var ok=true;
-    var nome=document.getElementById('f-nome'),sobre={value:''},email={value:''},fexp={value:''};
-    [['f-nome',nome.value.trim().length>=2],['f-tel',tel.value.replace(/\D/g,'').length>=10]].forEach(function(p){
+    var nome=document.getElementById('f-nome'),email=document.getElementById('f-email'),fexp={value:''};
+    [['f-nome',nome.value.trim().length>=2],
+     ['f-email',email.checkValidity()&&email.value.trim()!==''],
+     ['f-tel',tel.value.replace(/\D/g,'').length>=10]].forEach(function(p){
       var f=document.getElementById(p[0]).closest('.field');if(!p[1]){f.classList.add('err');ok=false;}else{f.classList.remove('err');}
     });
     if(!ok){var first=form.querySelector('.field.err');if(first)first.scrollIntoView({behavior:'smooth',block:'center'});return;}
 
+    /* nome completo -> primeiro nome e sobrenome (a API de Conversões usa os dois separados) */
+    var partes=nome.value.trim().split(/\s+/),pnome=partes.shift()||'',sobre={value:partes.join(' ')};
     var ref=ambarNovoRef();
     ambarTrack('Lead',{content_name:'Imersao Ambar'},{eventID:ref});
-    ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:nome.value.trim(),sobrenome:sobre.value.trim()});
+    ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:pnome,sobrenome:sobre.value.trim()});
     var plano=planoAtual(); CHECKOUT_URL=plano.url;
-    try{var expv=fexp.value||'';window.ambarLeadZoho&&window.ambarLeadZoho({nome:(nome.value.trim()+' '+sobre.value.trim()).trim(),tel:tel.value.replace(/\D/g,''),email:email.value.trim(),
+    try{var expv=fexp.value||'';window.ambarLeadZoho&&window.ambarLeadZoho({nome:nome.value.trim(),tel:tel.value.replace(/\D/g,''),email:email.value.trim(),
       desc:'Origem: LP do webinar 27-28/11 · iniciou a compra · '+plano.nome.replace('Imersao Ambar - ','Ingresso escolhido: ')+' (R$ '+plano.valor.toFixed(2).replace('.',',')+')'});}catch(e){}
     ambarTrack('InitiateCheckout',{content_name:plano.nome,currency:'BRL',value:plano.valor});
 
     form.style.display='none';
     var done=document.getElementById('form-done');done.classList.add('show');
     if(CHECKOUT_URL){document.getElementById('done-text').textContent='Estamos te levando para o pagamento seguro...';
-      var dest=CHECKOUT_URL+(CHECKOUT_URL.indexOf('?')<0?'?':'&')+'client_reference_id='+encodeURIComponent(ref);
+      var dest=CHECKOUT_URL+(CHECKOUT_URL.indexOf('?')<0?'?':'&')+'prefilled_email='+encodeURIComponent(email.value.trim())+'&client_reference_id='+encodeURIComponent(ref);
       setTimeout(function(){window.location.href=dest;},900);
     }else{document.getElementById('done-text').textContent='Recebemos seus dados. Em instantes você receberá o link de pagamento e acesso por e-mail e WhatsApp.';}
   });
