@@ -497,12 +497,33 @@ src="https://www.facebook.com/tr?id=1648412173302853&ev=PageView&noscript=1"
 <script>
 /* Complementos do Pixel: o código oficial acima já carrega o Pixel e envia o PageView. */
 window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (formulário, medição por seção) */
-function ambarTrack(ev,data,opt){try{if(window.fbq&&window.PIXEL_IDS&&window.PIXEL_IDS.length){fbq('track',ev,data||{},opt||{});}}catch(e){}}
+function ambarTrack(ev,data,opt){try{if(window.__ambarTeste&&ev!=='PageView')return;if(window.fbq&&window.PIXEL_IDS&&window.PIXEL_IDS.length){fbq('track',ev,data||{},opt||{});}}catch(e){}}
 /* API de Conversões: o mesmo id vai no eventID do Pixel e no event_id do servidor (a Meta conta uma vez só) */
 window.ambarNovoRef=function(){var r='';try{r=crypto.randomUUID().replace(/-/g,'');}catch(e){}
   if(!r)r=Date.now().toString(36)+Math.random().toString(36).slice(2,12);
   try{localStorage.setItem('ambar_capi_ref',r);}catch(e){}return r;};
-window.ambarCapi=function(acao,dados){try{var b={acao:acao,url:location.href.split('#')[0]};for(var k in dados){if(Object.prototype.hasOwnProperty.call(dados,k))b[k]=dados[k];}
+/* Modo teste (19/11): ?teste=1 marca este navegador como teste; e-mails/telefones da equipe também.
+   Em teste, a LP NÃO envia Lead/InitiateCheckout ao Pixel nem à API de Conversões; o Zoho recebe com 'TESTE · '. */
+(function(){try{var q=new URLSearchParams(location.search);
+  if(q.get('teste')==='1')localStorage.setItem('ambar_teste','1');
+  if(q.get('teste')==='0')localStorage.removeItem('ambar_teste');
+  window.__ambarTeste=localStorage.getItem('ambar_teste')==='1';}catch(e){window.__ambarTeste=false;}})();
+window.AMBAR_EQUIPE={emails:['kauasousaevangelista03@gmail.com','gustavo.rcolombo@gmail.com','rafael.d1@outlook.com','larissa.lamelas@ambaralternative.com.br','rafael@zipin.com.br'],tels:['11975643604']};
+window.ambarEhEquipe=function(email,tel){email=(email||'').trim().toLowerCase();tel=(tel||'').replace(/\D/g,'').replace(/^55/,'');
+  return AMBAR_EQUIPE.emails.indexOf(email)>=0||AMBAR_EQUIPE.tels.some(function(t){return tel&&tel.slice(-11)===t;});};
+/* Origem do acesso (19/11): guarda a primeira origem da visita e manda junto ao Zoho. */
+(function(){try{var q=new URLSearchParams(location.search),r=document.referrer||'',o='';
+  var us=(q.get('utm_source')||'').toLowerCase(),um=q.get('utm_medium')||'',uc=q.get('utm_campaign')||'',ux=q.get('utm_content')||'';
+  if(us)o='UTM '+us+(um?'/'+um:'')+(uc?' · '+uc:'')+(ux?' · '+ux:'');
+  else if(q.get('fbclid'))o='Anúncio Meta (clique)';
+  else if(/instagram\.com/.test(r))o='Instagram';
+  else if(/facebook\.com|fb\.com/.test(r))o='Facebook';
+  else if(/google\./.test(r))o='Google';
+  else if(r&&r.indexOf(location.host)<0){try{o='Outro site ('+new URL(r).host+')';}catch(e){o='Outro site';}}
+  else o='Direto';
+  if(!localStorage.getItem('ambar_origem'))localStorage.setItem('ambar_origem',o);
+  window.__ambarOrigem=localStorage.getItem('ambar_origem')||o;}catch(e){window.__ambarOrigem='desconhecida';}})();
+window.ambarCapi=function(acao,dados){try{if(window.__ambarTeste)return;var b={acao:acao,url:location.href.split('#')[0]};for(var k in dados){if(Object.prototype.hasOwnProperty.call(dados,k))b[k]=dados[k];}
   fetch('/capi.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b),keepalive:true,credentials:'same-origin'}).catch(function(){});}catch(e){}};
 </script>
 <style>
@@ -1218,6 +1239,7 @@ fill="#0F0A07" stroke="none">
 
     /* nome completo -> primeiro nome e sobrenome (a API de Conversões usa os dois separados) */
     var partes=nome.value.trim().split(/\s+/),pnome=partes.shift()||'',sobre={value:partes.join(' ')};
+    if(window.ambarEhEquipe&&ambarEhEquipe(email.value,tel.value))window.__ambarTeste=true;
     var ref=ambarNovoRef();
     ambarTrack('Lead',{content_name:'Imersao Ambar'},{eventID:ref});
     ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:pnome,sobrenome:sobre.value.trim()});
@@ -1327,7 +1349,8 @@ fill="#0F0A07" stroke="none">
       var p=new URLSearchParams();
       p.append('xnQsjsdp',ZOHO.xnQsjsdp);p.append('zc_gad','');p.append('xmIwtLD',ZOHO.xmIwtLD);p.append('actionType',ZOHO.actionType);p.append('returnURL',ZOHO.returnURL);
       p.append('Last Name',(d.nome||'Sem nome').slice(0,80));p.append('Mobile',d.tel||'');p.append('Email',d.email||'');
-      p.append('Lead Status','Aguardando Contato');p.append('Description',(d.desc||'').slice(0,2000));p.append('aG9uZXlwb3Q','');
+      var teste=window.__ambarTeste||(window.ambarEhEquipe&&ambarEhEquipe(d.email,d.tel));var desc=(teste?'TESTE · ':'')+(d.desc||'')+' · Origem do acesso: '+(window.__ambarOrigem||'desconhecida');
+      p.append('Lead Status','Aguardando Contato');p.append('Description',desc.slice(0,2000));p.append('aG9uZXlwb3Q','');
       var ok=false;
       if(navigator.sendBeacon){ok=navigator.sendBeacon(ZOHO.url,p);}
       if(!ok){fetch(ZOHO.url,{method:'POST',mode:'no-cors',keepalive:true,body:p});}
