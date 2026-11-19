@@ -561,6 +561,9 @@ header.top .hbtn .px{font-size:17px;letter-spacing:.06em}
 /* valor simbólico como compromisso, logo após os preços */
 .offer-grid .simb{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px 40px;align-items:start}
 .offer-grid .card-form{grid-column:2;grid-row:1}
+.offer-grid .card-price,.offer-grid .card-form{align-self:stretch}
+@media(min-width:881px){.offer-grid{grid-template-columns:1fr 1fr}}
+.offer-grid .card-form{display:flex;flex-direction:column;justify-content:center}
 .simb .simb-h{display:grid;gap:10px}
 .simb .simb-t{display:grid;gap:10px}
 @media(max-width:880px){.offer-grid .simb{grid-column:auto;grid-row:auto;grid-template-columns:1fr}.offer-grid .card-form{grid-column:auto;grid-row:auto}}
