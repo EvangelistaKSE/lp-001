@@ -49,15 +49,20 @@ $cent  = (int)($s['amount_total'] ?? 0);
 /* dados que a pessoa digitou na LP (guardados pelo capi.php com o mesmo ref que foi para a Stripe) */
 $ref = capi_valid_ref($s['client_reference_id'] ?? null) ? $s['client_reference_id'] : null;
 $lp  = $ref ? capi_ctx_load($ref) : [];
-$lpNome = trim((string)($lp['nome'] ?? '') . ' ' . (string)($lp['sobrenome'] ?? ''));
 
 [$ingresso, $status] = $LINKS[$link];
-/* o que veio da Stripe (evento assinado) vale mais; o digitado na LP só entra quando a Stripe não tem o dado,
-   para ninguém marcar "Comprou" no registro de outra pessoa digitando o celular dela na LP */
-$dados = [
-  'nome_completo'      => $nome !== '' ? $nome : $lpNome,
-  'celular'            => capi_norm_phone($tel) !== '' ? $tel : (string)($lp['tel'] ?? ''),
-  'email'              => $email !== '' ? $email : (string)($lp['email'] ?? ''),
+/* A compra atualiza o MESMO registro criado pelo formulário da LP: a chave é o celular digitado na LP
+   (achado pelo ref que foi para a Stripe). Nome e e-mail vão iguais aos digitados na LP (não mudam o registro;
+   o Nome Completo é obrigatório no módulo). Os dados de quem pagou vão nos campos "comprador_*", que só a Stripe preenche.
+   Sem o ref da LP (link de pagamento aberto direto), o registro usa os dados da Stripe. */
+$lpTel = capi_norm_phone((string)($lp['tel'] ?? ''));
+if ($lpTel !== '') {
+  $lpNome = trim((string)($lp['nome'] ?? '') . ' ' . (string)($lp['sobrenome'] ?? ''));
+  $dados = ['nome_completo' => $lpNome !== '' ? $lpNome : ($nome !== '' ? $nome : 'Sem nome'), 'celular' => $lpTel, 'email' => (string)($lp['email'] ?? '')];
+} else {
+  $dados = ['nome_completo' => $nome !== '' ? $nome : 'Sem nome', 'celular' => $tel, 'email' => $email];
+}
+$dados += [
   'status'             => $status,
   'comprador_nome'     => $nome,
   'comprador_email'    => $email,
