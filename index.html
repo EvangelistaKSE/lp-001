@@ -1252,6 +1252,8 @@ fill="#0F0A07" stroke="none">
     ambarTrack('Lead',{content_name:'Imersao Ambar'},{eventID:ref});
     ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:pnome,sobrenome:sobre.value.trim()});
     var plano=planoAtual(); CHECKOUT_URL=plano.url;
+    /* guarda nome, e-mail e telefone neste navegador para a página de obrigado já preencher o formulário de qualificação */
+    try{localStorage.setItem('ambar_lead',JSON.stringify({nome:nome.value.trim(),email:email.value.trim(),tel:tel.value.replace(/\D/g,''),ts:Date.now()}));}catch(e){}
     try{window.ambarZoho&&window.ambarZoho({origem:'lp',nome_completo:nome.value.trim(),celular:tel.value.replace(/\D/g,''),email:email.value.trim(),
       ingresso:(plano===PLANOS.comunidade?'Plus':'Básico')});}catch(e){}
     ambarTrack('InitiateCheckout',{content_name:plano.nome,currency:'BRL',value:plano.valor});

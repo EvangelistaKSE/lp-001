@@ -974,7 +974,10 @@ fill="#0F0A07" stroke="none">
 (function(){
   var raiz=document.getElementById('qf'), f=document.getElementById('qform');
   var q=new URLSearchParams(location.search);
-  ['nome','email','tel'].forEach(function(k){var v=(window.__ambarPrefill||{})[k];if(v)document.getElementById('f-'+k).value=v;});
+  /* preenche nome, e-mail e WhatsApp: primeiro o que veio no link; senão, o que a pessoa digitou na LP neste navegador (até 30 dias) */
+  var lead={};try{lead=JSON.parse(localStorage.getItem('ambar_lead')||'{}')||{};if(!lead.ts||Date.now()-lead.ts>30*864e5)lead={};}catch(x){lead={};}
+  function fmtTel(t){t=String(t||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');if(t.length===11)return '('+t.slice(0,2)+') '+t.slice(2,7)+'-'+t.slice(7);if(t.length===10)return '('+t.slice(0,2)+') '+t.slice(2,6)+'-'+t.slice(6);return t;}
+  ['nome','email','tel'].forEach(function(k){var v=(window.__ambarPrefill||{})[k]||lead[k];if(v){var el=document.getElementById('f-'+k);if(el&&!el.value)el.value=(k==='tel'?fmtTel(v):v);}});
   /* "Se sim, qual?" só aparece para quem marcou Sim */
   var sub=document.getElementById('q-LEADCF12');
   f.querySelectorAll('input[name=LEADCF11]').forEach(function(r){r.addEventListener('change',function(){
@@ -1001,6 +1004,7 @@ fill="#0F0A07" stroke="none">
       disponivel:marcado('LEADCF13'),quando:marcado('LEADCF14'),aporte:marcado('LEADCF15'),
       profissao:txt('LEADCF16'),cidade_estado:txt('LEADCF17'),pergunta_rafael:txt('LEADCF18'),autorizacao:'Sim'};
     try{fetch('/zoho.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),keepalive:true,credentials:'same-origin'}).catch(function(){});}catch(x){}
+    try{localStorage.removeItem('ambar_lead');}catch(x){}  /* respondido: não guarda mais os dados no navegador */
     raiz.classList.add('enviado');raiz.scrollIntoView({behavior:'smooth',block:'start'});
   });
 })();
