@@ -508,9 +508,17 @@ window.ambarNovoRef=function(){var r='';try{r=crypto.randomUUID().replace(/-/g,'
   if(q.get('teste')==='1')localStorage.setItem('ambar_teste','1');
   if(q.get('teste')==='0')localStorage.removeItem('ambar_teste');
   window.__ambarTeste=localStorage.getItem('ambar_teste')==='1';}catch(e){window.__ambarTeste=false;}})();
-window.AMBAR_EQUIPE={emails:['kauasousaevangelista03@gmail.com','gustavo.rcolombo@gmail.com','rafael.d1@outlook.com','larissa.lamelas@ambaralternative.com.br','rafael@zipin.com.br'],tels:['11975643604']};
-window.ambarEhEquipe=function(email,tel){email=(email||'').trim().toLowerCase();tel=(tel||'').replace(/\D/g,'').replace(/^55/,'');
-  return AMBAR_EQUIPE.emails.indexOf(email)>=0||AMBAR_EQUIPE.tels.some(function(t){return tel&&tel.slice(-11)===t;});};
+/* Equipe: só o resumo SHA-256 do e-mail (minúsculo) e do celular (DDD + número), para os contatos não ficarem no HTML.
+   Para incluir alguém: gerar o SHA-256 do e-mail em minúsculas ou do celular só com dígitos (ex.: 11999998888). */
+window.AMBAR_EQUIPE_H=['88ef93f4d12d770c49fd6e27a3288c94c1bf3d6d69c2d493edb13a67a6db2ad6','5a03b1be868f36a47c8175d4bb4df74e5065398d09ec59c3cea98cdc7efce586','00f78fbbee1928b1c33adc8a3e5acc727c29525972f1843f4711a8f0a6302066','72c6f53ec39dee249ece802ea885620f72964b39396b03adc17a7c9509d1c702','fa6ff40f8dedd84e8e3dae72fe95c2cac6522bd4def32ecb120d4d2ffad636a7','3fee17021fb8e6f5f2746fdc63d4f51d935735660741e5bd1f8963f996be1231'];
+window.__ambarEquipe=false;
+window.ambarChecaEquipe=function(v){try{if(!v||!window.crypto||!crypto.subtle||!window.TextEncoder)return;
+  crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)).then(function(b){var h=Array.prototype.map.call(new Uint8Array(b),function(x){return('0'+x.toString(16)).slice(-2);}).join('');
+  if(AMBAR_EQUIPE_H.indexOf(h)>=0)window.__ambarEquipe=true;}).catch(function(){});}catch(e){}};
+window.ambarEhEquipe=function(){return window.__ambarEquipe===true;};
+['input','change'].forEach(function(tipo){document.addEventListener(tipo,function(e){var t=e.target;if(!t||!t.id)return;
+  if(t.id==='f-email')ambarChecaEquipe((t.value||'').trim().toLowerCase());
+  else if(t.id==='f-tel'){var d=(t.value||'').replace(/\D/g,'').replace(/^55(?=\d{10,11}$)/,'');if(d.length>=10)ambarChecaEquipe(d.slice(-11));}},true);});
 /* Origem do acesso (19/11): guarda a primeira origem da visita e manda junto ao Zoho. */
 (function(){try{var q=new URLSearchParams(location.search),r=document.referrer||'',o='';
   var us=(q.get('utm_source')||'').toLowerCase(),um=q.get('utm_medium')||'',uc=q.get('utm_campaign')||'',ux=q.get('utm_content')||'';
@@ -1244,8 +1252,8 @@ fill="#0F0A07" stroke="none">
     ambarTrack('Lead',{content_name:'Imersao Ambar'},{eventID:ref});
     ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:pnome,sobrenome:sobre.value.trim()});
     var plano=planoAtual(); CHECKOUT_URL=plano.url;
-    try{var expv=fexp.value||'';window.ambarLeadZoho&&window.ambarLeadZoho({nome:nome.value.trim(),tel:tel.value.replace(/\D/g,''),email:email.value.trim(),
-      desc:'Origem: LP do webinar 27-28/11 · iniciou a compra · '+plano.nome.replace('Imersao Ambar - ','Ingresso escolhido: ')+' (R$ '+plano.valor.toFixed(2).replace('.',',')+')'});}catch(e){}
+    try{window.ambarZoho&&window.ambarZoho({origem:'lp',nome_completo:nome.value.trim(),celular:tel.value.replace(/\D/g,''),email:email.value.trim(),
+      ingresso:(plano===PLANOS.comunidade?'Plus':'Básico')});}catch(e){}
     ambarTrack('InitiateCheckout',{content_name:plano.nome,currency:'BRL',value:plano.valor});
 
     form.style.display='none';
@@ -1342,20 +1350,8 @@ fill="#0F0A07" stroke="none">
 <script>
 (function(){
   var WA="5511927394858";
-  var ZOHO={url:"https://crm.zoho.com/crm/WebToLeadForm",xnQsjsdp:"2f024b74c1c8be86a3950e223c7bd9fb4dc84e6cb97618bb2e527315748d931f",xmIwtLD:"b02e4221101b5addfa9ea8f004d8de35a379272742a77b351b17a0d94ef262baeb50a31f39f2dff4010a5b116b6632f1",actionType:"TGVhZHM=",returnURL:"https://ambaralternativewebinar.com.br"};
-  /* grava o lead no Zoho CRM (formulário "LP Webinar 27 28 inscricao e chat") */
-  window.ambarLeadZoho=function(d){
-    try{
-      var p=new URLSearchParams();
-      p.append('xnQsjsdp',ZOHO.xnQsjsdp);p.append('zc_gad','');p.append('xmIwtLD',ZOHO.xmIwtLD);p.append('actionType',ZOHO.actionType);p.append('returnURL',ZOHO.returnURL);
-      p.append('Last Name',(d.nome||'Sem nome').slice(0,80));p.append('Mobile',d.tel||'');p.append('Email',d.email||'');
-      var teste=window.__ambarTeste||(window.ambarEhEquipe&&ambarEhEquipe(d.email,d.tel));var desc=(teste?'TESTE · ':'')+(d.desc||'')+' · Origem do acesso: '+(window.__ambarOrigem||'desconhecida');
-      p.append('Lead Status','Aguardando Contato');p.append('Description',desc.slice(0,2000));p.append('aG9uZXlwb3Q','');
-      var ok=false;
-      if(navigator.sendBeacon){ok=navigator.sendBeacon(ZOHO.url,p);}
-      if(!ok){fetch(ZOHO.url,{method:'POST',mode:'no-cors',keepalive:true,body:p});}
-    }catch(e){}
-  };
+  /* grava no Zoho CRM (módulo "Webinar - Alavancagem em 2027") pelo /zoho.php, que repassa ao Zoho Flow */
+  window.ambarZoho=function(d){try{fetch('/zoho.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),keepalive:true,credentials:'same-origin'}).catch(function(){});}catch(e){}};
   var btn=document.getElementById('amb-chat-btn'),box=document.getElementById('amb-chat'),body=document.getElementById('amb-chat-b'),tip=document.getElementById('amb-chat-tip'),iniciado=false;
   function msg(t,quem){var d=document.createElement('div');d.className='amb-msg '+(quem||'bot');d.textContent=t;body.appendChild(d);body.scrollTop=body.scrollHeight;return d;}
   function opts(lista){var w=document.createElement('div');w.className='amb-opts';lista.forEach(function(o){var b=document.createElement('button');b.type='button';b.textContent=o[0];b.onclick=function(){w.remove();msg(o[0],'eu');o[1]();};w.appendChild(b);});body.appendChild(w);body.scrollTop=body.scrollHeight;}
@@ -1374,7 +1370,7 @@ fill="#0F0A07" stroke="none">
     f.onsubmit=function(e){e.preventDefault();
       var nome=f.nome.value.trim(),tel=f.tel.value.replace(/\D/g,''),duv=f.duvida.value.trim();
       if(nome.length<2||tel.length<10){f.querySelector('.amb-err').style.display='block';return;}
-      window.ambarLeadZoho({nome:nome,tel:tel,desc:'Origem: chat da LP do webinar 27-28/11 · pediu atendimento humano'+(duv?' · Dúvida: '+duv:'')});
+      window.ambarZoho({origem:'chat',nome_completo:nome,celular:tel,duvida_chat:duv||'Pediu atendimento pelo chat, sem dúvida escrita'});
       try{if(window.ambarTrack)ambarTrack('Contact',{content_name:'Chat LP Webinar'});}catch(err){}
       f.remove();msg(nome+' · '+f.tel.value,'eu');
       msg('Obrigada, '+nome.split(' ')[0]+'! Estou abrindo o WhatsApp da Âmbar. É só enviar a mensagem que um atendente responde por lá.');

@@ -3,12 +3,13 @@
    A chave de leitura da Stripe fica FORA do public_html, no arquivo
    .stripe_cupons_key, na pasta inicial da conta (home).
    A página só recebe {"restam": N, "max": 10}. Resposta guardada por 20 s. */
+require __DIR__ . '/capi-lib.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
 $home  = dirname(__DIR__, 2);
 $chave = @trim((string)@file_get_contents($home . '/.stripe_cupons_key'));
-$cache = sys_get_temp_dir() . '/ambar_cupom_bonus30.json';
+$cache = capi_dir() . '/cupom_bonus30.json';   /* fora do /tmp, que pode ser compartilhado com outras contas */
 
 if (is_file($cache) && time() - filemtime($cache) < 20) { readfile($cache); exit; }
 if ($chave === '') { http_response_code(503); echo '{"erro":"sem chave"}'; exit; }

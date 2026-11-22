@@ -1,30 +1,30 @@
 <?php
 /* Recebe da Stripe as compras aprovadas do webinar (webhook) e grava o comprador no
-   Zoho CRM pelo formulário web "Webinar 27 28 compras Stripe" (etiqueta "Comprador webinar 27-28").
+   Zoho CRM, módulo "Webinar - Alavancagem em 2027", pelo Zoho Flow (zoho_send em capi-lib.php).
+   O Flow cria ou atualiza o registro pelo Celular: quem preencheu a LP e depois pagou fica num registro só.
    Eventos: checkout.session.completed (pago) e checkout.session.async_payment_succeeded (Pix).
-   Só aceita os 3 links de pagamento do webinar e ignora reenvios da mesma compra.
-   O CRM calcula sozinho "Ingresso comprado" e "Valor pago (R$)" a partir do valor em centavos. */
+   Só aceita os 3 links de pagamento do webinar e ignora reenvios da mesma compra. */
+require __DIR__ . '/capi-lib.php';
 header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('America/Sao_Paulo');
 
+/* link de pagamento => [ingresso no CRM, status no CRM] */
 $LINKS = [
-  'plink_1UcpXaA7WMEJpu3N5BpyvCSp' => 'Webinar · Ingresso (R$ 47,90)',
-  'plink_1UctdrA7WMEJpu3N8vYPxQoG' => 'Webinar · Ingresso + Comunidade (R$ 57,90)',
-  'plink_1UcpYMA7WMEJpu3NsHP5X8nc' => 'Aula bônus domingo',
-];
-$ZOHO = [
-  'url'        => 'https://crm.zoho.com/crm/WebToLeadForm',
-  'xnQsjsdp'   => '7a1dc0a450200081cc55878cdcda65e6fd07000a5b20b6b4db18325e96b2b6c3',
-  'xmIwtLD'    => '7bda6372dcb09145b0a97ec11bb4adb72fa6fb24287b9d99e08bba3b291d6000122dd29c9682ca1cf29c494d8270ed62',
-  'actionType' => 'TGVhZHM=',
-  'returnURL'  => 'https://ambaralternativewebinar.com.br/',
+  'plink_1UcpXaA7WMEJpu3N5BpyvCSp' => ['Básico', 'Comprou'],
+  'plink_1UctdrA7WMEJpu3N8vYPxQoG' => ['Plus', 'Comprou'],
+  'plink_1UcpYMA7WMEJpu3NsHP5X8nc' => ['', 'Comprou aula de domingo'],
 ];
 
 function fim($cod, $msg) { http_response_code($cod); echo json_encode(['ok' => $cod < 300, 'msg' => $msg]); exit; }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fim(405, 'use POST');
-$ev = json_decode((string)file_get_contents('php://input'), true);
-if (!is_array($ev) || empty($ev['type']) || empty($ev['data']['object'])) fim(400, 'evento inválido');
+/* só aceita eventos assinados pela Stripe (segredo do endpoint em ~/.ambar_capi.json, chave "stripe_compra_secret") */
+$body = (string)file_get_contents('php://input');
+$segredo = trim((string)(capi_config()['stripe_compra_secret'] ?? ''));
+if ($segredo === '') { capi_log('ERRO compra: sem stripe_compra_secret na configuracao'); fim(500, 'configuracao'); }
+if (!stripe_assinatura_ok($body, $segredo)) { capi_log('ERRO compra: assinatura invalida ou expirada'); fim(400, 'assinatura'); }
+$ev = json_decode($body, true);
+if (!is_array($ev) || !is_string($ev['type'] ?? null) || !is_array($ev['data']['object'] ?? null)) fim(400, 'evento inválido');
 
 $tipo = $ev['type'];
 $s = $ev['data']['object'];
@@ -34,37 +34,43 @@ $link = $s['payment_link'] ?? '';
 if (!isset($LINKS[$link])) fim(200, 'ignorado: outro link');
 
 /* não grava a mesma compra duas vezes (a Stripe reenvia em caso de falha) */
-$home = dirname(__DIR__, 2);
-$reg  = $home . '/.stripe_compras_webinar.log';
-$sid  = preg_replace('/[^A-Za-z0-9_]/', '', $s['id'] ?? '');
+$sid  = preg_replace('/[^A-Za-z0-9_]/', '', is_string($s['id'] ?? null) ? $s['id'] : '');
 if ($sid === '') fim(400, 'sem id');
-$ja = is_file($reg) ? (string)file_get_contents($reg) : '';
-if (strpos($ja, $sid . "\n") !== false) fim(200, 'já registrado');
+$marca = capi_dir('compras') . '/' . $sid;
+if (is_file($marca)) fim(200, 'já registrado');
 
-$cd    = $s['customer_details'] ?? [];
-$nome  = trim((string)($cd['name'] ?? '')) ?: 'Sem nome';
-$email = trim((string)($cd['email'] ?? ($s['customer_email'] ?? '')));
-$tel   = preg_replace('/\D/', '', (string)($cd['phone'] ?? ''));
+$cd    = is_array($s['customer_details'] ?? null) ? $s['customer_details'] : [];
+$str   = function ($v) { return is_scalar($v) ? trim((string)$v) : ''; };
+$nome  = $str($cd['name'] ?? '');
+$email = $str($cd['email'] ?? ($s['customer_email'] ?? ''));
+$tel   = $str($cd['phone'] ?? '');
 $cent  = (int)($s['amount_total'] ?? 0);
 
-$campos = [
-  'xnQsjsdp' => $ZOHO['xnQsjsdp'], 'zc_gad' => '', 'xmIwtLD' => $ZOHO['xmIwtLD'],
-  'actionType' => $ZOHO['actionType'], 'returnURL' => $ZOHO['returnURL'],
-  'Last Name' => mb_substr($nome, 0, 80), 'Email' => $email, 'Mobile' => $tel,
-  'LEADCF20' => $link, 'LEADCF55' => (string)$cent,
-  'Lead Status' => 'Aguardando Contato',
-  'Description' => 'Compra Stripe · ' . $LINKS[$link] . ' · R$ ' . number_format($cent / 100, 2, ',', '.') . ' · ' . date('d/m/Y H:i') . ' · sessão ' . $sid,
-  'aG9uZXlwb3Q' => '',
-];
-$ch = curl_init($ZOHO['url']);
-curl_setopt_array($ch, [
-  CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query($campos),
-  CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_FOLLOWLOCATION => false,
-]);
-curl_exec($ch);
-$cod = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-curl_close($ch);
-if ($cod < 200 || $cod >= 400) fim(502, 'zoho respondeu ' . $cod);
+/* dados que a pessoa digitou na LP (guardados pelo capi.php com o mesmo ref que foi para a Stripe) */
+$ref = capi_valid_ref($s['client_reference_id'] ?? null) ? $s['client_reference_id'] : null;
+$lp  = $ref ? capi_ctx_load($ref) : [];
+$lpNome = trim((string)($lp['nome'] ?? '') . ' ' . (string)($lp['sobrenome'] ?? ''));
 
-@file_put_contents($reg, $sid . "\n", FILE_APPEND | LOCK_EX);
+[$ingresso, $status] = $LINKS[$link];
+/* o que veio da Stripe (evento assinado) vale mais; o digitado na LP só entra quando a Stripe não tem o dado,
+   para ninguém marcar "Comprou" no registro de outra pessoa digitando o celular dela na LP */
+$dados = [
+  'nome_completo'      => $nome !== '' ? $nome : $lpNome,
+  'celular'            => capi_norm_phone($tel) !== '' ? $tel : (string)($lp['tel'] ?? ''),
+  'email'              => $email !== '' ? $email : (string)($lp['email'] ?? ''),
+  'status'             => $status,
+  'comprador_nome'     => $nome,
+  'comprador_email'    => $email,
+  'comprador_telefone' => $tel,
+];
+if ($ingresso !== '') {
+  $dados['ingresso'] = $ingresso;
+  $dados['valor_ingresso'] = number_format($cent / 100, 2, '.', '');
+  $dados['link_pagamento'] = $link;
+}
+/* sem celular nao ha como achar/criar o registro (o Celular e a chave); nao adianta a Stripe reenviar */
+if (capi_norm_phone($dados['celular']) === '') { capi_log("ZOHO compra sem celular, sessao $sid"); fim(200, 'sem celular'); }
+if (!zoho_send($dados, 'compra')) fim(502, 'zoho nao gravou');
+
+@touch($marca);
 fim(200, 'gravado');

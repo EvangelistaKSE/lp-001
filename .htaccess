@@ -1,0 +1,31 @@
+# Segurança do site (19/11/2026). Se o public_html já tiver um .htaccess (o cPanel costuma criar um
+# com "AddHandler ... ea-php"), NÃO substitua: cole este bloco no topo e mantenha as linhas que já existem.
+
+# (se o site der erro 500 logo depois de colar, apague a linha "Options -Indexes": a listagem de pastas já está desligada no servidor)
+Options -Indexes
+ServerSignature Off
+
+# sempre HTTPS e sem "www" (endereço fixo: não usa o Host enviado pelo visitante)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteCond %{HTTPS} !=on [OR]
+  RewriteCond %{HTTP_HOST} ^www\. [NC]
+  RewriteRule ^ https://ambaralternativewebinar.com.br%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# cabeçalhos de segurança
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+  Header always set Content-Security-Policy "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+</IfModule>
+
+# arquivos que não devem ser abertos pelo navegador
+<FilesMatch "(^\.|^README|\.(md|log|ini|bak|old|orig|swp|sql|lock|json|jsonl|zip|tar|gz|sh|env)$|~$|^error_log$|^capi-lib\.php$|^teste-.*\.html$)">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 /\.git

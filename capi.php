@@ -22,34 +22,30 @@ if (!in_array($host, $c['allowed_hosts'], true)) sai(403, ['erro' => 'origem']);
 /* limite simples: 20 chamadas a cada 10 minutos por IP */
 /* (usa o IP real da conexão: o X-Forwarded-For pode ser forjado para escapar do limite) */
 $ctx = capi_request_context();
-$rl = capi_dir('rl') . '/' . sha1((string)($_SERVER['REMOTE_ADDR'] ?? 'x'));
-$hits = json_decode((string)@file_get_contents($rl), true);
-$hits = array_filter(is_array($hits) ? $hits : [], function ($t) { return is_int($t) && $t > time() - 600; });
-if (count($hits) >= 20) sai(429, ['erro' => 'limite']);
-$hits[] = time(); @file_put_contents($rl, json_encode(array_values($hits)), LOCK_EX);
+if (!capi_limite('', 20, 600)) sai(429, ['erro' => 'limite']);
 
-$in = json_decode((string)file_get_contents('php://input'), true);
+$in = json_decode((string)file_get_contents('php://input', false, null, 0, 8000), true);
 if (!is_array($in)) sai(400, ['erro' => 'json']);
 $acao = $in['acao'] ?? '';
 $ref = $in['ref'] ?? '';
 if (!capi_valid_ref($ref) || !in_array($acao, ['lead', 'checkout'], true)) sai(400, ['erro' => 'dados']);
 
-$url = (string)($in['url'] ?? '');
+$url = is_string($in['url'] ?? null) ? substr($in['url'], 0, 2048) : '';
 $uh = strtolower((string)parse_url($url, PHP_URL_HOST) . (parse_url($url, PHP_URL_PORT) ? ':' . parse_url($url, PHP_URL_PORT) : ''));
-if (!in_array($uh, $c['allowed_hosts'], true)) $url = $c['site_url'];
+if (!in_array($uh, $c['allowed_hosts'], true) || !in_array(parse_url($url, PHP_URL_SCHEME), ['https', 'http'], true)) $url = $c['site_url'];
 
 $pii = [];
 if ($acao === 'lead') {
   $pii = [
-    'email' => substr((string)($in['email'] ?? ''), 0, 200),
-    'tel' => substr((string)($in['tel'] ?? ''), 0, 40),
-    'nome' => substr((string)($in['nome'] ?? ''), 0, 80),
-    'sobrenome' => substr((string)($in['sobrenome'] ?? ''), 0, 80),
+    'email' => substr(is_scalar($in['email'] ?? '') ? (string)($in['email'] ?? '') : '', 0, 200),
+    'tel' => substr(is_scalar($in['tel'] ?? '') ? (string)($in['tel'] ?? '') : '', 0, 40),
+    'nome' => substr(is_scalar($in['nome'] ?? '') ? (string)($in['nome'] ?? '') : '', 0, 80),
+    'sobrenome' => substr(is_scalar($in['sobrenome'] ?? '') ? (string)($in['sobrenome'] ?? '') : '', 0, 80),
   ];
   if (!capi_norm_email($pii['email'])) sai(400, ['erro' => 'email']);
 }
 
-capi_ctx_save($ref, $ctx + ['url' => $url, 'ts' => time(), 'acao' => $acao] + $pii);
+if (capi_ctx_save($ref, $ctx + ['url' => $url, 'ts' => time(), 'acao' => $acao] + $pii) === false) sai(409, ['erro' => 'ref']);
 
 if ($acao === 'lead') {
   $ok = capi_send([

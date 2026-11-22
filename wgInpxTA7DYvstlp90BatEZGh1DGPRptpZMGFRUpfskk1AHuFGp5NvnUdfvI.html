@@ -491,6 +491,11 @@ footer .wrap{padding-block:42px;display:grid;gap:26px}
   .ty .fact:first-child{border-top:0}
 }
 </style>
+<script>
+/* tira nome/e-mail/WhatsApp da URL antes do Pixel carregar (assim não vão para a Meta); o formulário lê de __ambarPrefill */
+(function(){try{var q=new URLSearchParams(location.search),p={},tem=false;['nome','email','tel'].forEach(function(k){if(q.has(k)){p[k]=q.get(k);q.delete(k);tem=true;}});
+  window.__ambarPrefill=p;if(tem){var r=q.toString();history.replaceState(null,'',location.pathname+(r?'?'+r:'')+location.hash);}}catch(e){window.__ambarPrefill={};}})();
+</script>
 <!-- Meta Pixel Code -->
 <script>
 !function(f,b,e,v,n,t,s)
@@ -514,7 +519,9 @@ window.PIXEL_IDS = ["1648412173302853"];  /* usado pelos eventos da página (for
 try{
   /* conta a compra uma vez por navegador (recarregar a página não duplica) */
   var k='ambar_purchase_com comunidade';var ja=false;try{ja=localStorage.getItem(k)==='1';}catch(e){}
-  if(!ja){var ref=null;try{ref=localStorage.getItem('ambar_capi_ref');}catch(e){}fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - com comunidade',currency:'BRL',value:57.90},ref?{eventID:ref}:{});try{localStorage.setItem(k,'1');}catch(e){}}
+  var ref=null;try{ref=localStorage.getItem('ambar_capi_ref');}catch(e){}
+  /* sem o ref (visita direta, robô, prévia de link) não conta compra: a compra real chega pelo webhook da Stripe */
+  if(!ja&&ref){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - com comunidade',currency:'BRL',value:57.90},{eventID:ref});try{localStorage.setItem(k,'1');}catch(e){}}
 }catch(e){}
 </script>
 <style>
@@ -597,8 +604,8 @@ header.top .hdate{display:inline-flex!important}
           <div class="q dados">
             <label><span>Nome completo <span class="req">*</span></span><input type="text" id="f-nome" autocomplete="name" required maxlength="80"></label>
             <label><span>E-mail usado na compra <span class="req">*</span></span><input type="email" id="f-email" autocomplete="email" required maxlength="100"></label>
-            <label><span>WhatsApp</span><input type="tel" id="f-tel" autocomplete="tel" maxlength="20" placeholder="(11) 90000-0000"></label>
-            <p class="erro" id="erro-dados">Preencha nome e e-mail.</p>
+            <label><span>WhatsApp <span class="req">*</span></span><input type="tel" id="f-tel" autocomplete="tel" inputmode="tel" required maxlength="20" placeholder="(11) 90000-0000"></label>
+            <p class="erro" id="erro-dados">Preencha nome, e-mail e WhatsApp com DDD.</p>
           </div>
         <div class="q" role="group" aria-labelledby="t-LEADCF9" data-obrig="1" data-nome="LEADCF9"><p class="t" id="t-LEADCF9">Qual é o seu principal objetivo com a imersão? <span class="req">*</span></p><div class="ops"><label class="op"><input type="radio" name="LEADCF9" value="Entender alavancagem antes de decidir" required> Entender alavancagem antes de decidir</label><label class="op"><input type="radio" name="LEADCF9" value="Comprar meu primeiro imóvel para investir"> Comprar meu primeiro imóvel para investir</label><label class="op"><input type="radio" name="LEADCF9" value="Ampliar uma carteira de imóveis que já tenho"> Ampliar uma carteira de imóveis que já tenho</label><label class="op"><input type="radio" name="LEADCF9" value="Construir renda para a aposentadoria"> Construir renda para a aposentadoria</label><label class="op"><input type="radio" name="LEADCF9" value="Comprar imóvel em leilão"> Comprar imóvel em leilão</label><label class="op"><input type="radio" name="LEADCF9" value="Outro"> Outro</label></div><p class="erro">Escolha uma opção.</p></div>
         <div class="q" role="group" aria-labelledby="t-LEADCF10" data-obrig="1" data-nome="LEADCF10"><p class="t" id="t-LEADCF10">Hoje você tem imóveis? <span class="req">*</span></p><div class="ops"><label class="op"><input type="radio" name="LEADCF10" value="Não" required> Não</label><label class="op"><input type="radio" name="LEADCF10" value="Sim, financiado"> Sim, financiado</label><label class="op"><input type="radio" name="LEADCF10" value="Sim, quitado (1)"> Sim, quitado (1)</label><label class="op"><input type="radio" name="LEADCF10" value="Sim, quitados (2 ou mais)"> Sim, quitados (2 ou mais)</label></div><p class="erro">Escolha uma opção.</p></div>
@@ -964,10 +971,9 @@ fill="#0F0A07" stroke="none">
 <script>
 /* Formulário de qualificação: mesmo envio do /qualificacao/ */
 (function(){
-  var Z={url:"https://crm.zoho.com/crm/WebToLeadForm",xnQsjsdp:"178e85850a1b448682cf9e9b2fbbe194a349310371e0f93e816a639b8dad6a34",xmIwtLD:"fee0deec3d111cf060cf7a19e685ce0eac30546cbaa08eb47265fc24ded6a0ae7799ae88f65cd14afd9ea7bb0ea15aa8",actionType:"TGVhZHM=",returnURL:"https://ambaralternativewebinar.com.br/qualificacao/?ok=1"};
   var raiz=document.getElementById('qf'), f=document.getElementById('qform');
   var q=new URLSearchParams(location.search);
-  ['nome','email','tel'].forEach(function(k){var v=q.get(k);if(v)document.getElementById('f-'+k).value=v;});
+  ['nome','email','tel'].forEach(function(k){var v=(window.__ambarPrefill||{})[k];if(v)document.getElementById('f-'+k).value=v;});
   /* "Se sim, qual?" só aparece para quem marcou Sim */
   var sub=document.getElementById('q-LEADCF12');
   f.querySelectorAll('input[name=LEADCF11]').forEach(function(r){r.addEventListener('change',function(){
@@ -981,23 +987,19 @@ fill="#0F0A07" stroke="none">
     function marca(b){b.classList.add('falta');ok=false;if(!primeiro)primeiro=b;}
     var nome=document.getElementById('f-nome').value.trim(), email=document.getElementById('f-email').value.trim();
     var dados=f.querySelector('.dados');
-    if(!nome||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))marca(dados);
+    if(!nome||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)||document.getElementById('f-tel').value.replace(/\D/g,'').length<10)marca(dados);
     f.querySelectorAll('.q[data-obrig="1"]').forEach(function(b){if(!b.querySelector('input:checked'))marca(b);});
     if(!document.getElementById('f-cons').checked)marca(document.getElementById('q-cons'));
     if(!ok){primeiro.scrollIntoView({behavior:'smooth',block:'center'});return;}
-    var p=new URLSearchParams();
-    p.append('xnQsjsdp',Z.xnQsjsdp);p.append('zc_gad','');p.append('xmIwtLD',Z.xmIwtLD);p.append('actionType',Z.actionType);p.append('returnURL',Z.returnURL);
-    p.append('Last Name',nome.slice(0,80));p.append('Email',email);
-    p.append('Mobile',document.getElementById('f-tel').value.replace(/\D/g,'').slice(0,20));
-    p.append('Lead Status','Aguardando Contato');
-    p.append('Description','Origem: formulário de qualificação pós-compra · Imersão Âmbar 27-28/11');
-    f.querySelectorAll('input[name^=LEADCF]:checked').forEach(function(i){p.append(i.name,i.value);});
-    ['LEADCF16','LEADCF17','LEADCF18'].forEach(function(n){var v=document.getElementById(n).value.trim();if(v)p.append(n,v.slice(0,1800));});
-    p.append('LEADCF53','on');
-    p.append('aG9uZXlwb3Q','');
-    var enviado=false;
-    try{if(navigator.sendBeacon)enviado=navigator.sendBeacon(Z.url,p);}catch(x){}
-    if(!enviado){try{fetch(Z.url,{method:'POST',mode:'no-cors',keepalive:true,body:p});}catch(x){}}
+    var tels=document.getElementById('f-tel').value.replace(/\D/g,'');
+    function marcado(n){var i=f.querySelector('input[name='+n+']:checked');return i?i.value:'';}
+    function txt(id){return document.getElementById(id).value.trim();}
+    var d={origem:'qualificacao',nome_completo:nome,celular:tels,email:email,
+      objetivo:marcado('LEADCF9'),tem_imoveis:marcado('LEADCF10'),usou_credito:marcado('LEADCF11'),
+      credito_tipos:Array.prototype.map.call(f.querySelectorAll('input[name=LEADCF12]:checked'),function(i){return i.value;}).join('; '),
+      disponivel:marcado('LEADCF13'),quando:marcado('LEADCF14'),aporte:marcado('LEADCF15'),
+      profissao:txt('LEADCF16'),cidade_estado:txt('LEADCF17'),pergunta_rafael:txt('LEADCF18'),autorizacao:'Sim'};
+    try{fetch('/zoho.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),keepalive:true,credentials:'same-origin'}).catch(function(){});}catch(x){}
     raiz.classList.add('enviado');raiz.scrollIntoView({behavior:'smooth',block:'start'});
   });
 })();
