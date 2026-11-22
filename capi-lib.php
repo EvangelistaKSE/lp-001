@@ -166,7 +166,7 @@ function capi_send($event, $label) {
    Só vão os campos preenchidos, para um envio parcial não apagar o que já está no registro. */
 function zoho_campos() {
   return [
-    'nome_completo' => 120, 'celular' => 20, 'email' => 120, 'status' => 60, 'ingresso' => 40,
+    'nome_completo' => 120, 'celular' => 20, 'email' => 120, 'status' => 60, 'etapa' => 40, 'ingresso' => 40,
     'duvida_chat' => 2000, 'comprador_nome' => 120, 'comprador_email' => 120, 'comprador_telefone' => 20,
     'valor_ingresso' => 20, 'link_pagamento' => 120,
     'objetivo' => 120, 'tem_imoveis' => 120, 'usou_credito' => 20, 'credito_tipos' => 400,

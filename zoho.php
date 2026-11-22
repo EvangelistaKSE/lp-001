@@ -47,6 +47,7 @@ if ($origem === 'lp') {
   if (!in_array($d['ingresso'] ?? '', ['Básico', 'Plus'], true)) unset($d['ingresso']);
   if (capi_norm_email($d['email'] ?? '') === '') sai(400, ['erro' => 'email']);
   $d['status'] = 'Iniciou a compra';
+  $d['etapa'] = 'Página Acessada';     /* fase 1: o Flow só aplica esta etapa se o card ainda não tiver etapa */
 }
 if ($origem === 'qualificacao') {
   if (($in['autorizacao'] ?? '') !== 'Sim') sai(400, ['erro' => 'autorizacao']);

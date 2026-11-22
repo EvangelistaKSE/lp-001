@@ -70,6 +70,7 @@ $dados += [
 ];
 if ($ingresso !== '') {
   $dados['ingresso'] = $ingresso;
+  $dados['etapa'] = 'Ingresso Comprado';   /* fase 2: avança o card de "Página Acessada" para "Ingresso Comprado" */
   $dados['valor_ingresso'] = number_format($cent / 100, 2, '.', '');
   $dados['link_pagamento'] = $link;
 }
