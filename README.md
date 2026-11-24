@@ -1,6 +1,6 @@
 # LP-001 — Âmbar Alternative · Imersão sobre Alavancagem
 
-Landing page do webinar ao vivo (27 e 28 de novembro de 2026).
+Landing page do webinar ao vivo (4 e 5 de dezembro de 2026).
 
 - `index.html` — página única e autossuficiente (fontes, logo, favicon e imagens embutidos; funciona offline).
 - `images/` — arte original (foto do facilitador).
