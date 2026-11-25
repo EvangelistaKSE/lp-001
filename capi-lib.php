@@ -23,7 +23,7 @@ function capi_config() {
   $cfg = $c + [
     'meta_token' => '',
     'stripe_webhook_secret' => '',
-    'pixel_id' => '1648412173302853',
+    'pixel_id' => '1139198742028778',
     'graph_version' => 'v23.0',
     'graph_base' => 'https://graph.facebook.com',
     'test_event_code' => '',
