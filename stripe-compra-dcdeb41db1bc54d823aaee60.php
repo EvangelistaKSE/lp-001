@@ -74,9 +74,39 @@ if ($ingresso !== '') {
   $dados['valor_ingresso'] = number_format($cent / 100, 2, '.', '');
   $dados['link_pagamento'] = $link;
 }
+/* ---------- WhatsApp: mensagem de compra aprovada, na hora (uma vez por sessão de pagamento) ----------
+   Marca a ida ao checkout como "comprou" (o cron não manda o abandono) e o celular como comprador. */
+$ck = $ref ? checkout_load($ref) : null;
+if ($ck) checkout_update($ref, function ($x) { if (!$x) return null; $x['status'] = 'comprou'; $x['comprou_ts'] = time(); return $x; });
+$waTel  = capi_norm_phone((string)($ck['tel'] ?? '')) ?: ($lpTel !== '' ? $lpTel : capi_norm_phone($tel));
+$waNome = trim((string)($ck['nome'] ?? '')) ?: ($dados['nome_completo'] !== 'Sem nome' ? $dados['nome_completo'] : '');
+if ($waTel !== '' && ($m = comprou_tel_marca($waTel))) @touch($m);
+$waPlano = null;
+foreach (checkout_planos() as $k => $p) if ($p['link'] === $link) $waPlano = $k;
+$waMarca = capi_dir('wa_obrigado') . '/' . $sid;
+$waFalhou = false;
+if ($waPlano && $waTel !== '' && !is_file($waMarca)) {
+  $w = wa_config();
+  $tpl = $waPlano === 'comunidade' ? $w['wa_tpl_compra_comunidade'] : $w['wa_tpl_compra_ingresso'];
+  if ($tpl === '') capi_log("WA compra: sem template para o plano $waPlano, nao enviado");
+  elseif (@fopen($waMarca, 'x')) {       /* reserva: reenvio da Stripe ao mesmo tempo não duplica */
+    $primeiro = capi_split_name($waNome)[0] ?: 'tudo bem';
+    [$ok, $det] = wa_enviar_template($waTel, $waNome, $tpl, [$primeiro], null, 'compra');
+    if (!$ok) {                          /* falhou: pede para a Stripe reenviar o evento (até 3 vezes) */
+      @unlink($waMarca);
+      $tent = capi_dir('wa_obrigado') . '/' . $sid . '.tentativas';
+      $n = (int)@file_get_contents($tent) + 1;
+      @file_put_contents($tent, (string)$n);
+      $waFalhou = $n < 3;
+    }
+    if ($ck) checkout_update($ref, function ($x) use ($ok, $det) { if (!$x) return null; $x['compra'] = ['ts' => time(), 'ok' => $ok, 'detalhe' => $det]; return $x; });
+  }
+}
+
 /* sem celular nao ha como achar/criar o registro (o Celular e a chave); nao adianta a Stripe reenviar */
 if (capi_norm_phone($dados['celular']) === '') { capi_log("ZOHO compra sem celular, sessao $sid"); fim(200, 'sem celular'); }
 if (!zoho_send($dados, 'compra')) fim(502, 'zoho nao gravou');
 
+if ($waFalhou) fim(502, 'whatsapp nao enviado');
 @touch($marca);
 fim(200, 'gravado');

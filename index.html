@@ -1257,6 +1257,10 @@ fill="#0F0A07" stroke="none">
     ambarTrack('Lead',{content_name:'Imersao Ambar'},{eventID:ref});
     ambarCapi('lead',{ref:ref,email:email.value.trim(),tel:tel.value.replace(/\D/g,''),nome:pnome,sobrenome:sobre.value.trim()});
     var plano=planoAtual(); CHECKOUT_URL=plano.url;
+    /* registra a ida ao checkout para a automação de WhatsApp (abandono / compra aprovada) */
+    try{fetch('/checkout-registro.php',{method:'POST',keepalive:true,headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ref:ref,plano:(plano===PLANOS.comunidade?'comunidade':'ingresso'),nome:nome.value.trim(),
+      email:email.value.trim(),tel:tel.value.replace(/\D/g,''),teste:!!window.__ambarTeste})}).catch(function(){});}catch(e){}
     /* guarda nome, e-mail e telefone neste navegador para a página de obrigado já preencher o formulário de qualificação */
     try{localStorage.setItem('ambar_lead',JSON.stringify({nome:nome.value.trim(),email:email.value.trim(),tel:tel.value.replace(/\D/g,''),ts:Date.now()}));}catch(e){}
     try{window.ambarZoho&&window.ambarZoho({origem:'lp',nome_completo:nome.value.trim(),celular:tel.value.replace(/\D/g,''),email:email.value.trim(),

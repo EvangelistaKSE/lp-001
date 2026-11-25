@@ -123,7 +123,7 @@ function capi_cleanup() {
   $marca = capi_dir() . '/ultima_limpeza';
   if (is_file($marca) && filemtime($marca) > time() - 86400) return;
   @touch($marca);
-  foreach (['ctx', 'enviados', 'rl'] as $sub) {
+  foreach (['ctx', 'enviados', 'rl', 'checkout', 'checkout_cod', 'comprou_tel', 'wa_obrigado'] as $sub) {
     foreach (glob(capi_dir($sub) . '/*') ?: [] as $f) if (is_file($f) && filemtime($f) < time() - 30 * 86400) @unlink($f);
   }
 }
@@ -245,4 +245,112 @@ function capi_limite($prefixo, $max, $janela) {
   if ($ok) { $hits[] = time(); ftruncate($fh, 0); rewind($fh); fwrite($fh, json_encode($hits)); }
   flock($fh, LOCK_UN); fclose($fh);
   return $ok;
+}
+
+/* ======================================================================================
+   Automação de WhatsApp do checkout (abandono + compra aprovada)
+   Tabela: ~/.ambar_capi/checkout/<ref>.json  (um arquivo por ida ao checkout)
+           ~/.ambar_capi/checkout_cod/<codigo> -> ref   (código curto do botão "Vou finalizar a inscrição")
+           ~/.ambar_capi/comprou_tel/<sha1 do celular>  (quem já comprou, para não mandar abandono)
+   Os envios passam pelo painel do WhatsApp (rota /api/automacao/template), que grava no histórico.
+   ====================================================================================== */
+
+/* Os dois ingressos. A chave vem do formulário; a URL nunca vem do navegador (evita redirecionamento aberto). */
+function checkout_planos() {
+  return [
+    'ingresso'   => ['nome' => 'Ingresso',               'url' => 'https://buy.stripe.com/14A8wO3EVg4C5qb8bH77O00', 'link' => 'plink_1UcpXaA7WMEJpu3N5BpyvCSp'],
+    'comunidade' => ['nome' => 'Ingresso + Comunidade',  'url' => 'https://buy.stripe.com/bJe14m4IZf0y8CngId77O02', 'link' => 'plink_1UctdrA7WMEJpu3N8vYPxQoG'],
+  ];
+}
+
+function wa_config() {
+  $c = capi_config();
+  $d = [
+    'painel_url' => '',                              /* ex.: https://8liiqzg92a.c39.airoapp.ai */
+    'painel_chave' => '',                            /* igual a AUTOMACAO_CHAVE no painel */
+    'wa_idioma' => 'pt_BR',
+    'wa_abandono_min' => 5,                          /* minutos sem pagar até a mensagem de abandono */
+    'wa_tpl_abandono' => 'checkout_abandonado',
+    'wa_tpl_compra_ingresso' => 'compra_confirmada_ingresso',
+    'wa_tpl_compra_comunidade' => '',                /* vazio = ainda não existe: não envia */
+  ];
+  foreach ($d as $k => $v) if (isset($c[$k]) && (is_scalar($c[$k]))) $d[$k] = is_int($v) ? max(1, (int)$c[$k]) : trim((string)$c[$k]);
+  return $d;
+}
+
+function checkout_codigo_valido($c) { return is_string($c) && preg_match('/^[A-Za-z0-9]{8}$/', $c); }
+
+/* código curto aleatório de 8 caracteres, único */
+function checkout_novo_codigo() {
+  $abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';   /* sem 0/O, 1/l/I */
+  for ($tentativa = 0; $tentativa < 20; $tentativa++) {
+    $cod = '';
+    for ($i = 0; $i < 8; $i++) $cod .= $abc[random_int(0, strlen($abc) - 1)];
+    if (!is_file(capi_dir('checkout_cod') . '/' . $cod)) return $cod;
+  }
+  return null;
+}
+
+function checkout_arquivo($ref) { return capi_dir('checkout') . '/' . $ref . '.json'; }
+
+function checkout_load($ref) {
+  if (!capi_valid_ref($ref)) return null;
+  $d = json_decode((string)@file_get_contents(checkout_arquivo($ref)), true);
+  return is_array($d) ? $d : null;
+}
+
+/* Altera um registro com trava no arquivo (o cron e o webhook podem mexer ao mesmo tempo).
+   $fn recebe o registro e devolve o novo (ou null para não gravar). Retorna o que $fn devolveu. */
+function checkout_update($ref, $fn) {
+  if (!capi_valid_ref($ref)) return null;
+  $fh = @fopen(checkout_arquivo($ref), 'c+');
+  if (!$fh) return null;
+  flock($fh, LOCK_EX);
+  $d = json_decode((string)stream_get_contents($fh), true);
+  $novo = $fn(is_array($d) ? $d : null);
+  if (is_array($novo)) { ftruncate($fh, 0); rewind($fh); fwrite($fh, json_encode($novo, CAPI_JSON)); fflush($fh); }
+  flock($fh, LOCK_UN); fclose($fh);
+  return $novo;
+}
+
+function checkout_ref_por_codigo($cod) {
+  if (!checkout_codigo_valido($cod)) return null;
+  $ref = trim((string)@file_get_contents(capi_dir('checkout_cod') . '/' . $cod));
+  return capi_valid_ref($ref) ? $ref : null;
+}
+
+function comprou_tel_marca($tel) { $t = capi_norm_phone($tel); return $t ? capi_dir('comprou_tel') . '/' . sha1($t) : null; }
+
+/* Pede ao painel do WhatsApp para enviar um template. Retorna [ok, detalhe]. */
+function wa_enviar_template($tel, $nome, $template, $corpo, $botaoUrl, $label) {
+  $w = wa_config();
+  $tel = capi_norm_phone($tel);
+  if ($tel === '') { capi_log("WA $label: sem celular"); return [false, 'sem celular']; }
+  if ($template === '') { capi_log("WA $label: template nao configurado"); return [false, 'sem template']; }
+  $body = ['to' => $tel, 'nome' => (string)$nome, 'template' => $template, 'idioma' => $w['wa_idioma'],
+           'corpo' => array_values(array_map('strval', (array)$corpo))];
+  if ($botaoUrl !== null && $botaoUrl !== '') $body['botaoUrl'] = (string)$botaoUrl;
+
+  if (!empty(capi_config()['dry_run'])) {
+    @file_put_contents(capi_dir() . '/wa-dryrun.jsonl', json_encode($body, CAPI_JSON) . "\n", FILE_APPEND | LOCK_EX);
+    capi_log("DRY-RUN WA $label $template");
+    return [true, 'dry-run'];
+  }
+  $base = rtrim($w['painel_url'], '/');
+  if (!preg_match('#^(https://[^/\s]+|http://(127\.0\.0\.1|localhost)(:\d+)?)$#', $base) || $w['painel_chave'] === '') {
+    capi_log("ERRO WA $label: painel_url ou painel_chave ausente na configuracao"); return [false, 'configuracao'];
+  }
+  $ch = curl_init($base . '/api/automacao/template');
+  curl_setopt_array($ch, [
+    CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($body, CAPI_JSON),
+    CURLOPT_HTTPHEADER => ['Content-Type: application/json; charset=utf-8', 'Authorization: Bearer ' . $w['painel_chave']],
+    CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_FOLLOWLOCATION => false,
+  ]);
+  $res = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch);
+  curl_close($ch);
+  $d = json_decode((string)$res, true);
+  if ($code >= 200 && $code < 300 && !empty($d['ok'])) { capi_log("OK WA $label $template"); return [true, (string)($d['id'] ?? '')]; }
+  $msg = is_array($d) ? (string)($d['error'] ?? '') : '';
+  capi_log("ERRO WA $label $template http=$code " . substr($msg ?: $err, 0, 200));
+  return [false, $msg ?: ($err ?: "http $code")];
 }
