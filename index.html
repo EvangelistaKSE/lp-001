@@ -395,6 +395,12 @@ section{padding-block:clamp(52px,8vw,88px);border-top:1px solid var(--line-soft)
 .op .lg i{width:14px;height:3px;border-radius:2px;background:var(--amber-bright)}
 .op .lg .c i{background:var(--mel)}
 .op .lg b{font-size:15px;font-weight:500;color:var(--ink)}
+/* quem conduz: linha do tempo */
+.trilha{list-style:none;margin:30px 0 0;padding:22px 0 0;border-top:1px solid var(--line);display:grid;gap:12px}
+.trilha .tt{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber);margin:0 0 4px}
+.trilha li{display:grid;grid-template-columns:58px 1fr;gap:14px;align-items:baseline}
+.trilha .ano{font-family:var(--mono);font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--amber)}
+.trilha .txt{font-size:15.5px;line-height:1.5;color:var(--text)}
 /* cases */
 .cases{list-style:none;margin:44px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:820px){.cases{grid-template-columns:1fr}}
@@ -783,6 +789,7 @@ document.addEventListener('DOMContentLoaded',function(){
         <div class="rise">
           <blockquote>“Nestes dois dias eu mostro como estruturo uma operação alavancada: começo pelo risco que faz sentido e construo a exposição a partir dele.”</blockquote>
           <p class="by"><b>Dr. Rafael Fernandes</b> — Fundador da Âmbar Alternative</p>
+          <ol class="trilha"><li style="display:block"><p class="tt">Trajetória em ativos estressados e operações alavancadas</p></li><li><span class="ano">2020</span><span class="txt">Primeiro passo no mercado de leilões.</span></li><li><span class="ano">2021</span><span class="txt">Lança sua startup.</span></li><li><span class="ano">2022</span><span class="txt">A startup recebe aporte de capital.</span></li><li><span class="ano">2023</span><span class="txt">Monta sua casa de leilões.</span></li><li><span class="ano">2024</span><span class="txt">Começa a estruturar operações com as mesmas seguranças do leilão, em um ambiente privilegiado que preserva o valor inicial e mitiga riscos.</span></li><li><span class="ano">2025</span><span class="txt">Torna-se sócio da InvestImob e da Zipin. Estrutura operações no sell side e no buy side e dá aulas pelo Brasil, capacitando arrematantes com as novidades do mercado.</span></li><li><span class="ano">2026</span><span class="txt">Consolida-se no mercado e abre sua assessoria individualizada.</span></li></ol>
         </div>
       </div>
     </div>
