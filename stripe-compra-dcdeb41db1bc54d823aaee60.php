@@ -13,6 +13,10 @@ $LINKS = [
   'plink_1UcpXaA7WMEJpu3N5BpyvCSp' => ['Básico', 'Comprou'],
   'plink_1UctdrA7WMEJpu3N8vYPxQoG' => ['Plus', 'Comprou'],
   'plink_1UcpYMA7WMEJpu3NsHP5X8nc' => ['', 'Comprou aula de domingo'],
+  // Links novos (26/11): ingresso R$89,90, ingresso+comunidade R$97,90, aula bonus R$47,90
+  'plink_1UfueCA7WMEJpu3N19H8Lbwk' => ['Básico', 'Comprou'],
+  'plink_1UfuMnA7WMEJpu3NSH8KiaCM' => ['Plus', 'Comprou'],
+  'plink_1UfuiEA7WMEJpu3NOgf7adBZ' => ['', 'Comprou aula de domingo'],
 ];
 
 function fim($cod, $msg) { http_response_code($cod); echo json_encode(['ok' => $cod < 300, 'msg' => $msg]); exit; }

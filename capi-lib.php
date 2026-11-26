@@ -258,8 +258,8 @@ function capi_limite($prefixo, $max, $janela) {
 /* Os dois ingressos. A chave vem do formulário; a URL nunca vem do navegador (evita redirecionamento aberto). */
 function checkout_planos() {
   return [
-    'ingresso'   => ['nome' => 'Ingresso',               'url' => 'https://buy.stripe.com/14A8wO3EVg4C5qb8bH77O00', 'link' => 'plink_1UcpXaA7WMEJpu3N5BpyvCSp'],
-    'comunidade' => ['nome' => 'Ingresso + Comunidade',  'url' => 'https://buy.stripe.com/bJe14m4IZf0y8CngId77O02', 'link' => 'plink_1UctdrA7WMEJpu3N8vYPxQoG'],
+    'ingresso'   => ['nome' => 'Ingresso',               'url' => 'https://buy.stripe.com/bJe14m1wNg4C3i3dw177O06', 'link' => 'plink_1UfueCA7WMEJpu3N19H8Lbwk'],
+    'comunidade' => ['nome' => 'Ingresso + Comunidade',  'url' => 'https://buy.stripe.com/14A00i5N34lUaKvcrX77O05', 'link' => 'plink_1UfuMnA7WMEJpu3NSH8KiaCM'],
   ];
 }
 

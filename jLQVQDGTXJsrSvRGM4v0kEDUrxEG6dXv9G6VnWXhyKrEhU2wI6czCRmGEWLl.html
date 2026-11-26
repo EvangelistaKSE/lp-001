@@ -521,7 +521,7 @@ try{
   var k='ambar_purchase_ingresso';var ja=false;try{ja=localStorage.getItem(k)==='1';}catch(e){}
   var ref=null;try{ref=localStorage.getItem('ambar_capi_ref');}catch(e){}
   /* sem o ref (visita direta, robô, prévia de link) não conta compra: a compra real chega pelo webhook da Stripe */
-  if(!ja&&ref){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:47.90},{eventID:ref});try{localStorage.setItem(k,'1');}catch(e){}}
+  if(!ja&&ref){fbq('track','Purchase',{content_name:'Imersao Ambar Alavancagem - ingresso',currency:'BRL',value:89.90},{eventID:ref});try{localStorage.setItem(k,'1');}catch(e){}}
 }catch(e){}
 </script>
 <style>
