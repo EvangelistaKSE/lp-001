@@ -79,12 +79,18 @@ if (!empty($ctx['nome']) || !empty($ctx['sobrenome'])) {
 }
 
 $centavos = (int)($s['amount_total'] ?? 0);
-$produtos = [
-  4790 => 'Imersao Ambar - Ingresso',
-  5790 => 'Imersao Ambar - Ingresso + Comunidade',
-  8990 => 'Aula bonus domingo',
-  6293 => 'Aula bonus domingo',
-  7641 => 'Aula bonus domingo',
+// Identifica pelo link de pagamento (plink_), não pelo valor: a aula bonus (R$ 47,90) tem o
+// mesmo valor do ingresso antigo, entao o valor sozinho e ambiguo.
+$link = is_string($s['payment_link'] ?? null) ? $s['payment_link'] : '';
+$porLink = [
+  // links novos (26/11)
+  'plink_1UfueCA7WMEJpu3N19H8Lbwk' => 'Imersao Ambar - Ingresso',
+  'plink_1UfuMnA7WMEJpu3NSH8KiaCM' => 'Imersao Ambar - Ingresso + Comunidade',
+  'plink_1UfuiEA7WMEJpu3NOgf7adBZ' => 'Imersao Ambar - Aula bonus',
+  // links antigos (compatibilidade)
+  'plink_1UcpXaA7WMEJpu3N5BpyvCSp' => 'Imersao Ambar - Ingresso',
+  'plink_1UctdrA7WMEJpu3N8vYPxQoG' => 'Imersao Ambar - Ingresso + Comunidade',
+  'plink_1UcpYMA7WMEJpu3NsHP5X8nc' => 'Imersao Ambar - Aula bonus',
 ];
 
 $evento = [
@@ -97,7 +103,7 @@ $evento = [
   'custom_data' => [
     'value' => $centavos / 100,
     'currency' => strtoupper((string)(($s['currency'] ?? '') ?: 'brl')),
-    'content_name' => $produtos[$centavos] ?? 'Compra Ambar',
+    'content_name' => $porLink[$link] ?? 'Compra Ambar',
   ],
 ];
 
