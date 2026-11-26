@@ -14,4 +14,10 @@ A página já está pronta na branch **`preco-97-90`** (textos, botões, chat e 
 6. **Publicar:** juntar a `preco-97-90` na `main` e subir no cPanel. Não apagar o `stripe-compra-dcdeb41db1bc54d823aaee60.php`.
 7. **Teste:** uma compra de teste em cada link (depois reembolsar), conferindo que chega no Zoho, dispara o e-mail E1 e o Purchase na Meta.
 
-Ainda pendente (o Rafael vai definir data, horário e preço): as páginas da aula bônus (`sabado-...html` e `domingo-...html`) ainda dizem domingo, 06/12.
+## Aula bônus (também na branch `preco-97-90`)
+
+Nova aula bônus: **quinta, 10/12, às 20h, R$ 47,90**. As páginas `sabado-...html` (oferta) e `domingo-...html` (confirmação) já estão com a data, o horário e os valores novos: 30% off = R$ 33,53 · 15% off = R$ 40,71. O resgate abre na quarta, 09/12, às 22h30, e fecha na quinta, às 19h45.
+
+8. **Stripe:** criar o link novo da aula bônus de **R$ 47,90**, aceitando os cupons BONUSSABADO30 (30%, 10 usos) e EXCECAO15 (15%), e com o redirecionamento para a página `domingo-...html`. Trocar a URL `buy.stripe.com/eVq3...` nos 3 botões da `sabado-...html`.
+9. **`stripe-compra-...php`:** incluir o `plink_` do link novo da aula bônus (status "Comprou aula de domingo", ou renomear para quinta).
+10. **Atenção ao valor 4790:** a aula bônus agora custa o mesmo que o ingresso antigo (R$ 47,90). No `stripe-webhook.php` e na regra E1 do Zoho, o 4790 hoje significa "Ingresso". Se ficar assim, quem comprar a aula bônus vai ser registrado como ingresso e receber o e-mail de confirmação do webinar. Trocar o mapeamento: 4790 = aula bônus (ou identificar pelo link, e não pelo valor).
